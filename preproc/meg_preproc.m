@@ -1,4 +1,4 @@
-function preprocFileName = rd_MEGPreproc3(filename, figDir, badChannels)
+function preprocFileName = meg_preproc(filename, figDir, badChannels)
 
 %% Setup
 % desk Rachel
@@ -357,17 +357,17 @@ if components
 end
 
 %% finally, check the triggers
-rd_checkTriggers(dataset); % filename
+meg_checkTriggers(dataset); % filename
 
 %% return preproc file name
 preprocFileName = sprintf('%s_%s.sqd', filename(1:end-4), analStr);
 
 %% figure concat time series, channel avg trial time series, fft
-img = kt_plotTime(preprocFileName, analStr, 0,0); 
+img = meg_plotTime(preprocFileName, analStr, 0,0); 
 
 %% save figs
 if saveFigs
-    runStr = rd_getTag(filename);
+    runStr = meg_getTag(filename);
     figSubDir = sprintf('%s/%s/%s', figDir, analStr, runStr);
     if ~exist(figSubDir,'dir')
         mkdir(figSubDir)

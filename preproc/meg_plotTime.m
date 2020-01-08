@@ -1,8 +1,8 @@
-function img = kt_plotTime(sqdfile, analStr, rejectTrials, rejectChannels)
-% KT_PLOTTIME  Plots: (1) concatenated trial time series, (2) trial time
+function img = meg_plotTime(sqdfile, analStr, rejectTrials, rejectChannels)
+% MEG_PLOTTIME  Plots: (1) concatenated trial time series, (2) trial time
 % series averaged by channel, (3) fft 
 % 
-% KT_PLOTTIME(sqdfile, analStr, rejectTrials, rejectChannels)
+% MEG_PLOTTIME(sqdfile, analStr, rejectTrials, rejectChannels)
 % 
 % sqdfile = 'datafile.sqd'
 % analStr = 'string of analysis steps'

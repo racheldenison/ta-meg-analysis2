@@ -1,4 +1,4 @@
-function outFile = rd_combineSqd(dataDir, outName, tag, delimiter)
+function outFile = meg_combineSqd(dataDir, outName, tag, delimiter)
 %
 % function outFile = rd_combineSqd([dataDir], [outName], [tag], [delimiter])
 %
