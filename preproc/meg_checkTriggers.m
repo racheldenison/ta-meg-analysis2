@@ -1,4 +1,4 @@
-function f = rd_checkTriggers(fileName, trigChans, verbose)
+function f = meg_checkTriggers(fileName, trigChans, verbose)
 % function rd_checkTriggers(fileName, [trigChans], [verbose])
 
 % INPUTS:

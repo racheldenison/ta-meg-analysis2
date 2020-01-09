@@ -83,7 +83,7 @@ for iRun = 1:12 % :12 % :12 % nRuns
     run = runs(iRun);
 %     runFile = sprintf('%s/%s_run%02d.sqd', preprocDir, fileBase, run);
     runFile = sprintf('%s/%s', preprocDir, runFiles(iRun).name);
-    preprocFileName = rd_MEGPreproc3(runFile, figDir, badChannels); % edit Preproc file here  rd_kt_MEGPreproc
+    preprocFileName = meg_preproc(runFile, figDir, badChannels); % edit Preproc file here  rd_kt_MEGPreproc
 end
 
 %% combine run files into preprocessed sqd

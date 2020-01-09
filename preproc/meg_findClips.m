@@ -1,4 +1,4 @@
-function badlyClippingChannels = findClips(data)
+function badlyClippingChannels = meg_findClips(data)
 
 clippingChannelsThreshold = 4;
 fractionClippingThreshold = 0.1;

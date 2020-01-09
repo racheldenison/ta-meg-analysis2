@@ -1,4 +1,4 @@
-function [saturatedChannelEpochs, saturatedChannels, saturatedTrials] = rd_findSaturatedChannelEpochs(trigData)
+function [saturatedChannelEpochs, saturatedChannels, saturatedTrials] = meg_findSaturatedChannelEpochs(trigData)
 
 cutoff = .10;
 
