@@ -2,6 +2,7 @@ function D = meg_slicer(data, cond, condNames, levelNames)
 
 % function D = meg_slicer(data, cond, condNames, levelNames)
 %
+% INPUTS
 % data
 %   data matrix, time x channels x trials
 %
@@ -19,6 +20,12 @@ function D = meg_slicer(data, cond, condNames, levelNames)
 %   condition.
 %
 % See "args" and "set up data" cells for examples.
+%
+% OUTPUTS
+% D
+%   slice data structure
+%   Each field is a condition combination containing a data matrix (time x 
+%   channels x trials) for the trials in that group.
 %
 % Rachel Denison
 % January 2020
