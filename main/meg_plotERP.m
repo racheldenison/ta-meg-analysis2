@@ -1,4 +1,4 @@
-function meg_plotERP(data,selectedChannels,plotSingleTrial,plotAvgTrial,figDir)
+function meg_plotERP(data,selectedChannels,plotSingleTrial,plotAvgTrial)
 
 % MEG_PLOTERP(data,selectedChannels,plotSingleTrial,plotAvgTrial)
 % 
@@ -18,9 +18,10 @@ function meg_plotERP(data,selectedChannels,plotSingleTrial,plotAvgTrial,figDir)
 % January 2020 
 
 %% args 
-if nargin<5
-    figDir = '/Users/kantian/Google\Drive/CarrascoLab/github/ta-meg-analysis2';
-end
+
+% if nargin<5
+%     figDir = '/Users/kantian/Dropbox/CarrascoLab/TA2Figs';
+% end
 if nargin<4 % default plots avg trial 
     plotAvgTrial = 1; 
 end
@@ -34,12 +35,10 @@ if nargin<1
     load('data.mat'); % load dummy data 
 end
 
-saveFigs = 1;
+saveFigs = 0;
  
 fieldName = fieldnames(data);
 
-t = -500:2800; % time 
-xlims = [min(t),max(t)]; 
 eventTimes = [0 1000 1250 2100]; 
 eventNames = {'precue','T1','T2','response cue'};
 
@@ -50,6 +49,8 @@ if plotSingleTrial
     for iF=1:numel(fieldName)
         figure
         dataField = data.(fieldName{iF}); 
+        t = 1:size(dataField,1); 
+        xlims = [min(t),max(t)]; 
         nPlot = 1; 
         if(isnumeric(dataField))
             for iC = selectedChannels
@@ -75,12 +76,14 @@ if plotAvgTrial
     for iF=1:numel(fieldName)
         figure
         dataField = data.(fieldName{iF}); 
+        t = 1:size(dataField,1); 
+        xlims = [min(t),max(t)]; 
         nPlot = 1; 
         if(isnumeric(dataField))
             for iC = selectedChannels
                 subplot (length(selectedChannels),1,nPlot)
                 hold on
-                meanTrial = nanmean(dataField(:,iC,:),3); 
+                meanTrial = nanmean(dataField(:,iC,:),3);               
                 plot(t, squeeze(meanTrial))
                 title(sprintf('%s channel %d mean',fieldName{iF},iC))
                 xlim(xlims)
