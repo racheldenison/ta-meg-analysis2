@@ -132,8 +132,7 @@ if plotAvgChannel
     
 end
 
-
 %% return figure handle
 
-
+fH = sort(findobj('Type','figure'));
 
