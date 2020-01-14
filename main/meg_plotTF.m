@@ -33,7 +33,21 @@ tstart = -1000; % for targets
 tstop = 2300;
 t = tstart:tstop;
 
-% ft time-freq params 
+%% checks
+
+% check data
+sz = size(data.(fieldName{1}));
+if numel(sz)~=3
+    error('data is expected to be 3-dimensional, with trials as the last dimension')
+end
+    
+% check channels 
+if ~isnumeric(selectedChannels)
+    error('selectedChannels is expected to be a vector of channel numbers')
+end
+
+%% ft time freq params 
+
 taper          = 'hanning';
 foi            = 1:100;
 t_ftimwin      = 10 ./ foi;
@@ -48,18 +62,8 @@ ylims = [min(foi),max(foi)];
 xlims = [size(toi,1),size(toi,2)]; 
 clims = [0 15];
 
-%% checks
-
-% check data
-sz = size(data.(fieldName{1}));
-if numel(sz)~=3
-    error('data is expected to be 3-dimensional, with trials as the last dimension')
-end
-    
-% check channels 
-if ~isnumeric(selectedChannels)
-    error('selectedChannels is expected to be a vector of channel numbers')
-end
+nSamples = sz(1); 
+nfft = 2^nextpow2(nSamples);
 
 %% FFT on high SNR channels
 
@@ -90,89 +94,89 @@ end
 %% OTHER JUNK TESTING
 %%%%%%%%%%%%%%%%%%%%%
 
-ssvefFreq = 30;
-noiseDist = 5;
-freqIdx = find(foi==ssvefFreq);
-signal = tfAmps(freqIdx,:,:);
-noise = tfAmps(freqIdx + [-noiseDist noiseDist],:,:);
-
-% figures
-ytick = 10:10:numel(foi);
-xtick = 51:50:numel(toi);
-clims = [0 15];
-diffClims = [-10 10];
-eventTimes = 0
-
-fH(2) = figure;
-for iTrig = 1:nTrigs
-    subplot(1,2,iTrig)
-    imagesc(tfAmps(:,:,iTrig),clims)
-    rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
-    if iTrig==nTrigs
-        xlabel('time (ms)')
-        ylabel('frequency (Hz)')
-    end
-    title(trigNames{iTrig})
-end
-rd_supertitle(['channel' sprintf(' %d', channels)]);
-rd_raiseAxis(gca);
-
-
-
-
-
-%% ft read data
-
-sqdfile = '/Users/kantian/Dropbox/Data/TA2/MEG/R0817_20181120/preproc/R0817_TA2_11.20.18_run01_bietfp.sqd';
-
-dat = ft_read_data(sqdfile);
-hdr = ft_read_header(sqdfile);
-
-cfg                     = [];
-cfg.dataset             = sqdfile;
-cfg.trialdef.prestim    = 0.2; %0; %0.5; % sec
-cfg.trialdef.poststim   = 2.3; %2.3; %3.1;
-cfg.trialdef.trig       = [168,167]; %[168,167]; %[161:164,167]; %168 = precue, 167=blank
-threshold = 2.5;
-[trl,Events]            = mytrialfun_all(cfg,threshold,[]);
-
-data          = ft_preprocessing(struct('dataset',sqdfile,...
-    'channel','MEG','continuous','yes','trl',trl));
-
-%% ft time freq analysis 
-
-cfg              = [];
-cfg.output       = 'pow';
-cfg.channel      = 'MEG';
-cfg.method       = 'mtmconvol';
-cfg.taper        = 'hanning';
-cfg.foi          = 2:2:30;                         % analysis 2 to 30 Hz in steps of 2 Hz
-cfg.t_ftimwin    = ones(length(cfg.foi),1).*0.5;   % length of time window = 0.5 sec
-cfg.toi          = -0.5:0.05:1.5;                  % time window "slides" from -0.5 to 1.5 sec in steps of 0.05 sec (50 ms)
-TFRhann = ft_freqanalysis(cfg, data);
-
-%% plot
-
-cfg              = [];
-cfg.baseline     = [-0.5 -0.1];
-cfg.baselinetype = 'absolute';
-cfg.maskstyle    = 'saturation';
-cfg.zlim         = [-3e-27 3e-27];
-cfg.channel      = 'MRC15';
-cfg.interactive  = 'no';
-figure
-ft_singleplotTFR(cfg, TFRhann);
-
-%%
-
-power = TFRhann.powspctrm; % channels x freqs x trials 
-powerCh = power(selectedChannels, :, :); 
-meanPowerCh = nanmean(powerCh,3); 
-
-imagesc(meanPowerCh)
-
-
-%% return figure handle
-
-rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes)
+% ssvefFreq = 30;
+% noiseDist = 5;
+% freqIdx = find(foi==ssvefFreq);
+% signal = tfAmps(freqIdx,:,:);
+% noise = tfAmps(freqIdx + [-noiseDist noiseDist],:,:);
+% 
+% % figures
+% ytick = 10:10:numel(foi);
+% xtick = 51:50:numel(toi);
+% clims = [0 15];
+% diffClims = [-10 10];
+% eventTimes = 0
+% 
+% fH(2) = figure;
+% for iTrig = 1:nTrigs
+%     subplot(1,2,iTrig)
+%     imagesc(tfAmps(:,:,iTrig),clims)
+%     rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
+%     if iTrig==nTrigs
+%         xlabel('time (ms)')
+%         ylabel('frequency (Hz)')
+%     end
+%     title(trigNames{iTrig})
+% end
+% rd_supertitle(['channel' sprintf(' %d', channels)]);
+% rd_raiseAxis(gca);
+% 
+% 
+% 
+% 
+% 
+% %% ft read data
+% 
+% sqdfile = '/Users/kantian/Dropbox/Data/TA2/MEG/R0817_20181120/preproc/R0817_TA2_11.20.18_run01_bietfp.sqd';
+% 
+% dat = ft_read_data(sqdfile);
+% hdr = ft_read_header(sqdfile);
+% 
+% cfg                     = [];
+% cfg.dataset             = sqdfile;
+% cfg.trialdef.prestim    = 0.2; %0; %0.5; % sec
+% cfg.trialdef.poststim   = 2.3; %2.3; %3.1;
+% cfg.trialdef.trig       = [168,167]; %[168,167]; %[161:164,167]; %168 = precue, 167=blank
+% threshold = 2.5;
+% [trl,Events]            = mytrialfun_all(cfg,threshold,[]);
+% 
+% data          = ft_preprocessing(struct('dataset',sqdfile,...
+%     'channel','MEG','continuous','yes','trl',trl));
+% 
+% %% ft time freq analysis 
+% 
+% cfg              = [];
+% cfg.output       = 'pow';
+% cfg.channel      = 'MEG';
+% cfg.method       = 'mtmconvol';
+% cfg.taper        = 'hanning';
+% cfg.foi          = 2:2:30;                         % analysis 2 to 30 Hz in steps of 2 Hz
+% cfg.t_ftimwin    = ones(length(cfg.foi),1).*0.5;   % length of time window = 0.5 sec
+% cfg.toi          = -0.5:0.05:1.5;                  % time window "slides" from -0.5 to 1.5 sec in steps of 0.05 sec (50 ms)
+% TFRhann = ft_freqanalysis(cfg, data);
+% 
+% %% plot
+% 
+% cfg              = [];
+% cfg.baseline     = [-0.5 -0.1];
+% cfg.baselinetype = 'absolute';
+% cfg.maskstyle    = 'saturation';
+% cfg.zlim         = [-3e-27 3e-27];
+% cfg.channel      = 'MRC15';
+% cfg.interactive  = 'no';
+% figure
+% ft_singleplotTFR(cfg, TFRhann);
+% 
+% %%
+% 
+% power = TFRhann.powspctrm; % channels x freqs x trials 
+% powerCh = power(selectedChannels, :, :); 
+% meanPowerCh = nanmean(powerCh,3); 
+% 
+% imagesc(meanPowerCh)
+% 
+% 
+% %% return figure handle
+% 
+% rd_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes)
 
