@@ -1,4 +1,4 @@
-function behav = rd_behavior(behav)
+function behav = meg_behavior(behav)
 
 %% key
 % blockNames = {'blank','fast-left'}; % fast-left
