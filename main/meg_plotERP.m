@@ -29,8 +29,8 @@ if nargin<3 % default plots single trial
     plotSingleTrial = 1;
 end
 if nargin<2 % default selects channels 1:3
-    selectedChannels = 1:3;
-    disp('selectedChannels not specified, default 1:3')
+    selectedChannels = [20,23,36,43,60];
+    disp('selectedChannels not specified, default [20,23,36,43,60]')
 end
 if nargin<1
     load('data.mat'); % load dummy data
@@ -43,10 +43,12 @@ fieldName = fieldnames(data);
 nFields = numel(fieldName);
 nChannels = numel(selectedChannels);
 
-eventTimes = [0 1000 1250 2100]+500; % check timing
+eventTimes = [0 1000 1250 2100]; % check timing
 eventNames = {'precue','T1','T2','response cue'};
+tstart = -500; % -1000; 
+tstop = 2800; % 2300;
+t = tstart:tstop;
 
-t = 1:size(data.(fieldName{1}),1);
 xlims = [min(t),max(t)];
 
 %% checks
@@ -89,12 +91,13 @@ end
 if plotAvgTrial
     
     figure
-    for iC=1:nChannels
+    for iC=selectedChannels
         for iF=1:nFields
             vals = data.(fieldName{iF});
             meanTrial = nanmean(vals(:,iC,:),3);
             meanChannel = nanmean(meanTrial,2);
-            subplot (nChannels,1,iC)
+            idx = find(selectedChannels==iC);
+            subplot (nChannels,1,idx)
             hold on
             plot(t, meanChannel)
         end
@@ -109,12 +112,12 @@ if plotAvgTrial
     
 end
 
-
-%% plot ERP average channel
+%% plot ERP average trial across selected channels
 
 if plotAvgChannel
     
     figure
+    set(gcf, 'Position',  [100, 100, 800, 300])
     for iF=1:nFields
         vals = data.(fieldName{iF});
         meanTrial = nanmean(vals(:,selectedChannels,:),3);
