@@ -1,4 +1,4 @@
-function fH = meg_plotERP(data,selectedChannels,plotSingleTrial,plotAvgTrial,plotAvgChannel)
+function fH = meg_plotERF(data,selectedChannels,plotSingleTrial,plotAvgTrial,plotAvgChannel)
 
 % MEG_PLOTERP(data,selectedChannels,plotSingleTrial,plotAvgTrial)
 %
@@ -43,18 +43,16 @@ fieldName = fieldnames(data);
 nFields = numel(fieldName);
 nChannels = numel(selectedChannels);
 
-eventTimes = [0 1000 1250 2100]; % check timing
-eventNames = {'precue','T1','T2','response cue'};
-tstart = -500; % -1000; 
-tstop = 2800; % 2300;
-t = tstart:tstop;
-
+p = meg_params('TA2');
+t = p.tstart:p.tstop;
 xlims = [min(t),max(t)];
 
 %% checks
 
 % check data
 sz = size(data.(fieldName{1}));
+nTrials = sz(3); 
+nAllChannels = sz(2); 
 if numel(sz)~=3
     error('data is expected to be 3-dimensional, with trials as the last dimension')
 end
@@ -79,9 +77,26 @@ if plotSingleTrial
             xlim(xlims)
             xlabel('time (ms)')
             ylabel('amplitude')
-            vline(eventTimes,'k',eventNames)
+            vline(p.eventTimes,'k',p.eventNames)
         end
         rd_supertitle2(sprintf(sprintf('channel %d',iC)))
+    end
+    
+    spacer = 40;
+    figure
+    for iF=1:nFields
+        vals = data.(fieldName{iF});
+        subplot (nFields,1,iF)
+        hold on
+        for iC = 1:nAllChannels
+            meanTrial = nanmean(vals(:,iC,:),3);
+            plot(t, abs(meanTrial) + spacer*iC)
+        end
+        title(sprintf('%s',fieldName{iF}))
+        xlim(xlims)
+        xlabel('time (ms)')
+        ylabel('amplitude')
+        vline(p.eventTimes,'k',p.eventNames)
     end
     
 end
@@ -102,7 +117,7 @@ if plotAvgTrial
             plot(t, meanChannel)
         end
         xlim(xlims)
-        vline(eventTimes,'k',eventNames)
+        vline(p.eventTimes,'k',p.eventNames)
         xlabel('time (ms)')
         ylabel('amplitude')
         title(sprintf('channel %d',iC))
@@ -126,7 +141,7 @@ if plotAvgChannel
         plot(t, meanChannel)  
     end
     xlim(xlims)
-    vline(eventTimes,'k',eventNames)
+    vline(p.eventTimes,'k',p.eventNames)
     xlabel('time (ms)')
     ylabel('amplitude')
     title(sprintf('channel %d ',selectedChannels))
