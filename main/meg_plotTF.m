@@ -13,7 +13,7 @@ function [A,fH] = meg_plotTF(data,selectedChannels,selectedFreq)
 
 if nargin<3
     selectedFreq = 8:14;
-    disp('selectedFreqs not specified, default 8-14 Hz (alpha band, Foxe 2011')
+    disp('selectedFreqs not specified, default 8-14 Hz (alpha band (Foxe 2011))')
 end
 if nargin<2 % default selects channels 1:3
     selectedChannels = [20,23,36,43,60];
@@ -47,11 +47,10 @@ end
 %% params 
 
 % timing 
-eventTimes = [0 1000 1250 2100]; % check timing
-eventNames = {'precue','T1','T2','response cue'};
-tstart = -500; % -1000; 
-tstop = 2800; % 2300;
-t = tstart:10:tstop;
+p = meg_params('TA2');
+t = p.tstart:p.tstop;
+
+% t = tstart:10:tstop;
 
 taper          = 'hanning';
 foi            = 1:100;
@@ -84,27 +83,33 @@ for iC = 1:nConds
     amps = 2*abs(y(1:nfft/2+1,:,:)); % amp of freq x trial 
     ampsMean = nanmean(amps,3);
     
-    % fieldtrip input
-    vals = nanmean(data.(cond)(:,:,:),3)'; % channels by samples
-    [spectrum,ntaper,freqoi,timeoi] = ft_specest_mtmconvol(vals, t/1000, ...
-        'timeoi', toi, 'freqoi', foi, 'timwin', t_ftimwin, ...
-        'taper', taper, 'dimord', 'chan_time_freqtap');
+    % fieldtrip input, 
+    % single trial 
+    % try t from 1 
+    meanSpectrumAll = []; 
+    for iCh = p.megChannels
+        vals = [squeeze(data.(cond)(:,iCh,:))']; % trials by samples
+        [spectrum,ntaper,freqoi,timeoi] = ft_specest_mtmconvol(vals, t/1000, ...
+            'timeoi', toi, 'freqoi', foi, 'timwin', t_ftimwin, ...
+            'taper', taper, 'dimord', 'chan_time_freqtap');
+        meanSpectrum = squeeze(mean(abs(spectrum),1)); % t x f for one channel 
+        meanSpectrumAll = cat(3,meanSpectrumAll,meanSpectrum); % t x f x channel spectrum 
+    end
     
-    specAmp = squeeze(nanmean(abs(spectrum),1)); % mean across all channels
+    % specSelectedCh = spectrumAll(:,:,selectedChannels); 
+    % specSelectChMean = squeeze(nanmean(abs(specSelectedCh),1)); 
     
-    specSelectedCh = spectrum(selectedChannels,:,:); 
-    specSelectChMean = squeeze(nanmean(abs(specSelectedCh),1)); 
-    
-    tfAmps = specSelectChMean'; % foi x time
+    tfAmps = permute(meanSpectrumAll,[3,2,1]); % foi x time
     
     % store variables
     A.(cond).y = y; 
     A.(cond).f = f; 
     A.(cond).amps = amps; 
     A.(cond).ampsMean = ampsMean; 
-    A.(cond).specSelectedCh = specSelectedCh;
-    A.(cond).specSelectChMean = specSelectChMean;
+    % A.(cond).specSelectedCh = specSelectedCh;
+    % A.(cond).specSelectChMean = specSelectChMean;
     A.(cond).tfAmps = tfAmps;
+   
     
 end
 
@@ -125,7 +130,7 @@ for iC = 1:nConds
     imagesc(A.(cond).tfAmps)
     xlim(xlims)
     ylim(ylims)
-    xticklabels(num2str(xtickms))
+    % xticklabels(num2str(xtickms))
     xlabel('time (s)')
     ylabel('frequency (Hz)')
     colorbar
