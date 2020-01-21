@@ -33,7 +33,8 @@ if nargin<2 % default selects channels 1:3
     disp('selectedChannels not specified, default [20,23,36,43,60]')
 end
 if nargin<1
-    load('data.mat'); % load dummy data
+    load('D3.mat'); % load dummy data
+    data = D3; 
 end
 
 %% setup
@@ -99,6 +100,32 @@ if plotSingleTrial
         vline(p.eventTimes,'k',p.eventNames)
     end
     
+end
+
+%% single channel find peaks 
+
+% find peaks
+for iF=1:nFields
+    vals = data.(fieldName{iF});
+    subplot (nFields,1,iF)
+    hold on
+    spacer = 200; 
+    for iC = 1:20
+        meanTrial = abs(nanmean(vals(:,iC,:),3));
+        [pks,locs,w,prom] = findpeaks(meanTrial,t); 
+        pkinfo = [pks locs' w' prom];
+        [pSort,pIdx] = sort(prom,'descend');
+        
+        plot(t, meanTrial + iC*spacer)
+        topPeaks = pIdx(1:3); 
+        plot(locs(topPeaks),pks(topPeaks)+iC*spacer,'.','MarkerSize',30,'Color',[0,1,0])
+        
+    end
+    title(sprintf('%s',fieldName{iF}))
+    xlim(xlims)
+    xlabel('time (ms)')
+    ylabel('amplitude')
+    vline(p.eventTimes,'k',p.eventNames)
 end
 
 %% plot ERP average trial by channel

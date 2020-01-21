@@ -48,12 +48,7 @@ end
 
 % timing 
 p = meg_params('TA2');
-% p.tstart =1; 
-% p.tstop = 3301; 
 t = p.tstart:p.tstop;
-
-% t = 1:10:3301; 
-% t = tstart:10:tstop;
 
 taper          = 'hanning';
 foi            = 1:100;
@@ -65,7 +60,6 @@ tfAmps = [];
 ytick = 10:10:numel(foi);
 xtick = 1:50:numel(toi);
 xtickms = p.tstart:500:p.tstop;
-% label = {'-500' '0' '500' '1000' '1500' '2000' '2500'}; % {num2str(xtickms')}; 
 
 ylims = [min(foi),max(foi)]; 
 xlims = [size(toi,1),size(toi,2)]; 
@@ -79,7 +73,6 @@ Fsample = 1000;
 
 for iC = 1:nConds
     cond = condNames{iC}; 
-    % erf.(thisField) = squeeze(nanmean(data.(thisField)(:,selectedChannels,:),2)); % time x trial
     
     y = fft(data.(cond),nfft)/nSamples; % freq x trial 
     f = Fsample/2*linspace(0,1,nfft/2+1); % frequencies
