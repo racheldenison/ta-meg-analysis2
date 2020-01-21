@@ -18,6 +18,12 @@ switch expt
         p.eventNames = {'precue','T1','T2','response cue'};
         p.tstart = -500; % -1000; 
         p.tstop = 2800; % 2300;   
+        p.prestim = 0.5; 
+        p.poststim = 2.8; 
+        
+        % channels
+        p.megChannels = 1:157; 
+        
     otherwise 
         disp('expt type not recognized')
 end
