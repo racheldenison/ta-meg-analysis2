@@ -48,20 +48,23 @@ end
 
 % timing 
 p = meg_params('TA2');
+% p.tstart =1; 
+% p.tstop = 3301; 
 t = p.tstart:p.tstop;
 
+% t = 1:10:3301; 
 % t = tstart:10:tstop;
 
 taper          = 'hanning';
 foi            = 1:100;
 t_ftimwin      = 10 ./ foi;
-toi            = tstart/1000:0.01:tstop/1000;
+toi            = p.tstart/1000:0.01:p.tstop/1000;
 tfAmps = [];
 
 % figures
 ytick = 10:10:numel(foi);
 xtick = 1:50:numel(toi);
-xtickms = tstart:500:tstop;
+xtickms = p.tstart:500:p.tstop;
 % label = {'-500' '0' '500' '1000' '1500' '2000' '2500'}; % {num2str(xtickms')}; 
 
 ylims = [min(foi),max(foi)]; 
@@ -83,33 +86,27 @@ for iC = 1:nConds
     amps = 2*abs(y(1:nfft/2+1,:,:)); % amp of freq x trial 
     ampsMean = nanmean(amps,3);
     
-    % fieldtrip input, 
-    % single trial 
-    % try t from 1 
+    % fieldtrip wavelet convolution
     meanSpectrumAll = []; 
-    for iCh = p.megChannels
-        vals = [squeeze(data.(cond)(:,iCh,:))']; % trials by samples
+    for iCh = selectedChannels
+        vals = squeeze(data.(cond)(:,iCh,:))'; % trials by samples
         [spectrum,ntaper,freqoi,timeoi] = ft_specest_mtmconvol(vals, t/1000, ...
             'timeoi', toi, 'freqoi', foi, 'timwin', t_ftimwin, ...
             'taper', taper, 'dimord', 'chan_time_freqtap');
-        meanSpectrum = squeeze(mean(abs(spectrum),1)); % t x f for one channel 
+        meanSpectrum = squeeze(nanmean(abs(spectrum),1)); % t x f for one channel 
         meanSpectrumAll = cat(3,meanSpectrumAll,meanSpectrum); % t x f x channel spectrum 
     end
     
-    % specSelectedCh = spectrumAll(:,:,selectedChannels); 
-    % specSelectChMean = squeeze(nanmean(abs(specSelectedCh),1)); 
-    
     tfAmps = permute(meanSpectrumAll,[3,2,1]); % foi x time
+    meanTfAmps = squeeze(nanmean(tfAmps,1)); 
     
     % store variables
     A.(cond).y = y; 
     A.(cond).f = f; 
     A.(cond).amps = amps; 
     A.(cond).ampsMean = ampsMean; 
-    % A.(cond).specSelectedCh = specSelectedCh;
-    % A.(cond).specSelectChMean = specSelectChMean;
     A.(cond).tfAmps = tfAmps;
-   
+    A.(cond).meanTfAmps = meanTfAmps;
     
 end
 
@@ -127,15 +124,14 @@ for iC = 1:nConds
         set(gcf, 'Position',  [100, 100, 300*ceil(nConds/4), 300*ceil(nConds/4)])
     end
     hold on
-    imagesc(A.(cond).tfAmps)
+    imagesc(A.(cond).meanTfAmps) 
     xlim(xlims)
     ylim(ylims)
     % xticklabels(num2str(xtickms))
     xlabel('time (s)')
     ylabel('frequency (Hz)')
     colorbar
-    caxis(clims)
-    meg_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
+    meg_timeFreqPlotLabels(toi,foi,xtick,ytick,p.eventTimes);
     title(sprintf('%s \n channels %s ',und2space(cond), num2str(selectedChannels)))
 end
 
@@ -154,10 +150,10 @@ for iC = 1:nConds
         subplot (ceil(nConds/3),nConds,iC)
     end
     hold on
-    for iF = 1:size(A.(cond).tfAmps,1)
-        meanPow(iF) = nanmean(A.(cond).tfAmps(iF,:)); 
-        for iT = 1:size(A.(cond).tfAmps,2)
-            normPow(iF,iT) = A.(cond).tfAmps(iF,iT)/meanPow(iF)-1; 
+    for iF = 1:numel(foi)
+        meanPow(iF) = nanmean(A.(cond).meanTfAmps(iF,:)); 
+        for iT = 1:numel(toi)
+            normPow(iF,iT) = A.(cond).meanTfAmps(iF,iT)/meanPow(iF)-1; 
         end
     end
     imagesc(normPow)
@@ -166,9 +162,8 @@ for iC = 1:nConds
     xlabel('time (s)')
     ylabel('frequency (Hz)')
     colorbar
-    % caxis(clims)
-    xticklabels(num2str(xtickms))
-    meg_timeFreqPlotLabels(toi,foi,xtick,ytick,eventTimes);
+    caxis([-0.2 0.2])
+    meg_timeFreqPlotLabels(toi,foi,xtick,ytick,p.eventTimes);
     title(sprintf('normalized %s \n channels %s ',und2space(cond), num2str(selectedChannels)))
 end
 
