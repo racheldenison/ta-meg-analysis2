@@ -1,7 +1,8 @@
-function fH = meg_plotERF(data,selectedChannels,plotSingleTrial,plotAvgTrial,plotAvgChannel)
+function [fH,figNames] = meg_plotERF(data,selectedChannels,plotSingleTrial,plotAvgTrial,plotAvgChannel)
 
-% MEG_PLOTERP(data,selectedChannels,plotSingleTrial,plotAvgTrial)
+% MEG_PLOTERF(data,selectedChannels,plotSingleTrial,plotAvgTrial)
 %
+% INPUTS
 % data
 %   structure of condition cells containing
 %       data matrix, time x channels x trials
@@ -13,6 +14,12 @@ function fH = meg_plotERF(data,selectedChannels,plotSingleTrial,plotAvgTrial,plo
 %   1 or 0, default 1
 % plotAvgChannel
 %   1 or 0, default 1
+% 
+% OUPUT
+%   fH  
+%       figure handle
+%   figNames
+%       figure names
 %
 % Karen Tian
 % January 2020
@@ -38,7 +45,6 @@ if nargin<1
 end
 
 %% setup
-saveFigs = 0;
 
 fieldName = fieldnames(data);
 nFields = numel(fieldName);
@@ -63,7 +69,7 @@ if ~isnumeric(selectedChannels)
     error('selectedChannels is expected to be a vector of channel numbers')
 end
 
-%% plots ERP: fig per channel, subplot per condition, single trials 
+%% plots ERF: fig per channel, subplot per condition, single trials 
 
 if plotSingleTrial
     
@@ -83,52 +89,54 @@ if plotSingleTrial
         rd_supertitle2(sprintf(sprintf('channel %d',iC)))
     end
     
-    spacer = 40;
-    figure
-    for iF=1:nFields
-        vals = data.(fieldName{iF});
-        subplot (nFields,1,iF)
-        hold on
-        for iC = 1:nAllChannels
-            meanTrial = nanmean(vals(:,iC,:),3);
-            plot(t, abs(meanTrial) + spacer*iC)
-        end
-        title(sprintf('%s',fieldName{iF}))
-        xlim(xlims)
-        xlabel('time (ms)')
-        ylabel('amplitude')
-        vline(p.eventTimes,'k',p.eventNames)
-    end
+    % test peaks
+%     spacer = 40;
+%     figure
+%     for iF=1:nFields
+%         vals = data.(fieldName{iF});
+%         subplot (nFields,1,iF)
+%         hold on
+%         for iC = 1:nAllChannels
+%             meanTrial = nanmean(vals(:,iC,:),3);
+%             plot(t, abs(meanTrial) + spacer*iC)
+%         end
+%         title(sprintf('%s',fieldName{iF}))
+%         xlim(xlims)
+%         xlabel('time (ms)')
+%         ylabel('amplitude')
+%         vline(p.eventTimes,'k',p.eventNames)
+%     end
     
 end
 
 %% single channel find peaks 
 
 % find peaks
-for iF=1:nFields
-    vals = data.(fieldName{iF});
-    subplot (nFields,1,iF)
-    hold on
-    spacer = 200; 
-    for iC = 1:20
-        meanTrial = abs(nanmean(vals(:,iC,:),3));
-        [pks,locs,w,prom] = findpeaks(meanTrial,t); 
-        pkinfo = [pks locs' w' prom];
-        [pSort,pIdx] = sort(prom,'descend');
-        
-        plot(t, meanTrial + iC*spacer)
-        topPeaks = pIdx(1:3); 
-        plot(locs(topPeaks),pks(topPeaks)+iC*spacer,'.','MarkerSize',30,'Color',[0,1,0])
-        
-    end
-    title(sprintf('%s',fieldName{iF}))
-    xlim(xlims)
-    xlabel('time (ms)')
-    ylabel('amplitude')
-    vline(p.eventTimes,'k',p.eventNames)
-end
+% figure 
+% for iF=1:nFields
+%     vals = data.(fieldName{iF});
+%     subplot (nFields,1,iF)
+%     hold on
+%     spacer = 200; 
+%     for iC = 1:20
+%         meanTrial = abs(nanmean(vals(:,iC,:),3));
+%         [pks,locs,w,prom] = findpeaks(meanTrial,t); 
+%         pkinfo = [pks locs' w' prom];
+%         [pSort,pIdx] = sort(prom,'descend');
+%         
+%         plot(t, meanTrial + iC*spacer)
+%         topPeaks = pIdx(1:3); 
+%         plot(locs(topPeaks),pks(topPeaks)+iC*spacer,'.','MarkerSize',30,'Color',[0,1,0])
+%         
+%     end
+%     title(sprintf('%s',fieldName{iF}))
+%     xlim(xlims)
+%     xlabel('time (ms)')
+%     ylabel('amplitude')
+%     vline(p.eventTimes,'k',p.eventNames)
+% end
 
-%% plot ERP average trial by channel
+%% plot ERF average trial by channel
 
 if plotAvgTrial
     
@@ -150,11 +158,11 @@ if plotAvgTrial
         title(sprintf('channel %d',iC))
     end
     legend(fieldName)
-    rd_supertitle2('avg ERP')
+    rd_supertitle2('avg ERF')
     
 end
 
-%% plot ERP average trial across selected channels
+%% plot ERF average trial across selected channels
 
 if plotAvgChannel
     
@@ -173,11 +181,17 @@ if plotAvgChannel
     ylabel('amplitude')
     title(sprintf('channel %d ',selectedChannels))
     legend(fieldName)
-    rd_supertitle2('avg ERP')
+    rd_supertitle2('avg ERF')
     
 end
 
 %% return figure handle
 
-fH = sort(findobj('Type','figure'));
+fH = sort(double(findobj(0,'Type','figure')));
+
+chNames = {}; 
+for iC = 1:nChannels
+    chNames(iC)= {sprintf('ERF_SingleTrial_Channel%d',selectedChannels(iC))}; 
+end
+figNames = [chNames,'ERF_avgTrials','ERF_avgTrialsCh'];
 

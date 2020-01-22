@@ -1,10 +1,22 @@
-function [A,fH] = meg_plotTF(data,selectedChannels,selectedFreq)
+function [A,fH,figNames] = meg_plotTF(data,selectedChannels,selectedFreq)
 
 % MEG_PLOTERP(data,selectedChannels,plotSingleTrial,plotAvgTrial)
 %
+% INPUT
 % data
 %   structure of condition cells containing
 %       data matrix, time x channels x trials
+% selectedChannels
+%   vector of meg channels to inspect 
+% selectedFreq  
+%   vector of frequencies of interest
+% OUPUT
+% A
+%   structure of time freq amp
+% fH
+%   figure handle
+% figNames 
+%   figure names 
 %
 % Karen Tian
 % January 2020
@@ -199,17 +211,18 @@ figure
 hold on
 for iC = 1:nConds
     cond = condNames{iC};
-    fVals = squeeze(nanmean(A.(cond).tfAmps(selectedFreq,:),1));
-    plot(t, fVals)
+    fVals = squeeze(nanmean(A.(cond).meanTfAmps(selectedFreq,:),1));
+    plot(toi, fVals)
 end
-xlim([t(1),t(end)])
+xlim([toi(1),toi(end)])
 ylabel('amp')
 xlabel('time (ms)')
-vline(eventTimes,'k',eventNames)
+vline(p.eventTimes/1000,'k',p.eventNames)
 legend(condNames)
 title(sprintf('Frequency %d - %d (Hz)',selectedFreq(1),selectedFreq(end)))
 
 %% return figure handle
 
-fH = sort(findobj('Type','figure'));
+fH = sort(double(findobj(0,'Type','figure')));
+figNames = {'TF','TFnorm','FFTAllCh','FFTSelectCh','Freq'}; 
 
