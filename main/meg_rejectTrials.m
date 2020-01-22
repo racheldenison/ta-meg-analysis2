@@ -14,7 +14,7 @@ function data = meg_rejectTrials(sessionDir,data)
 
 %% NaN manually rejected channels 
 
-load(sprintf('/Users/kantian/Dropbox/Data/TA2/MEG/%s/prep/trials_rejected.mat',sessionDir)); 
+load(sprintf('/Users/kantian/Dropbox/Data/TA2/MEG/%s/prep/trials_rejected.mat',sessionDir), 'trials_rejected'); 
 data(:,:,trials_rejected) = NaN; 
 
 end
