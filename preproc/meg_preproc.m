@@ -39,7 +39,7 @@ rejectIC = 0; % ask to reject ics
 % high pass filter options
 Fsample = 1000;
 Fhp = 0.1; % high pass frequency
-N = []; %16500; % 8250 % fister order, will auto calculate if unspecified 
+N = []; %16500; % 8250 % filter order, auto calculate if unspecified 
 type = 'firws';
 direc = 'onepass-zerophase';
 
@@ -47,8 +47,8 @@ direc = 'onepass-zerophase';
 precueChannel = 168; 
 blankChannel = 167; 
 trialDef.trialFunHandle = @mytrialfun_all;
-trialDef.prestim = 0.2;
-trialDef.poststim = 2.3;
+trialDef.prestim = 0.5; % 0.2;
+trialDef.poststim = 2.8; % 2.3;
 trialDef.trig = [precueChannel,blankChannel]; 
 trialDef.nTrigsExpected = [];
 trialDef.threshold = 2.5; 
