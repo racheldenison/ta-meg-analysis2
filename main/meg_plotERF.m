@@ -46,8 +46,8 @@ end
 
 %% setup
 
-fieldName = fieldnames(data);
-nFields = numel(fieldName);
+condNames = fieldnames(data);
+nConds = numel(condNames);
 nChannels = numel(selectedChannels);
 
 p = meg_params('TA2');
@@ -57,12 +57,15 @@ xlims = [min(t),max(t)];
 %% checks
 
 % check data
-sz = size(data.(fieldName{1}));
-nTrials = sz(3); 
-nAllChannels = sz(2); 
-if numel(sz)~=3
-    error('data is expected to be 3-dimensional, with trials as the last dimension')
+sz = size(data.(condNames{1}));
+if numel(sz)<2 || numel(sz)>3
+    error('data is expected to be at least 2-dimensional, with time as the first dimension, and channels second')
+elseif numel(sz)==2 
+    nTrials = 1; 
+elseif numel(sz)==3
+    nTrials = sz(3); 
 end
+nAllChannels = sz(2); 
     
 % check channels 
 if ~isnumeric(selectedChannels)
@@ -75,12 +78,12 @@ if plotSingleTrial
     
     for iC = selectedChannels
         figure
-        for iF=1:nFields
-            vals = data.(fieldName{iF});
-            subplot (nFields,1,iF)
+        for iF=1:nConds
+            vals = data.(condNames{iF});
+            subplot (nConds,1,iF)
             hold on
             plot(t, squeeze(vals(:,iC,:)))
-            title(sprintf('%s',fieldName{iF}))
+            title(sprintf('%s',condNames{iF}))
             xlim(xlims)
             xlabel('time (ms)')
             ylabel('amplitude')
@@ -142,8 +145,8 @@ if plotAvgTrial
     
     figure
     for iC=selectedChannels
-        for iF=1:nFields
-            vals = data.(fieldName{iF});
+        for iF=1:nConds
+            vals = data.(condNames{iF});
             meanTrial = nanmean(vals(:,iC,:),3);
             meanChannel = nanmean(meanTrial,2);
             idx = find(selectedChannels==iC);
@@ -157,7 +160,7 @@ if plotAvgTrial
         ylabel('amplitude')
         title(sprintf('channel %d',iC))
     end
-    legend(fieldName)
+    legend(condNames)
     rd_supertitle2('avg ERF')
     
 end
@@ -168,8 +171,8 @@ if plotAvgChannel
     
     figure
     set(gcf, 'Position',  [100, 100, 800, 300])
-    for iF=1:nFields
-        vals = data.(fieldName{iF});
+    for iF=1:nConds
+        vals = data.(condNames{iF});
         meanTrial = nanmean(vals(:,selectedChannels,:),3);
         meanChannel = nanmean(meanTrial,2);
         hold on
@@ -180,7 +183,7 @@ if plotAvgChannel
     xlabel('time (ms)')
     ylabel('amplitude')
     title(sprintf('channel %d ',selectedChannels))
-    legend(fieldName)
+    legend(condNames)
     rd_supertitle2('avg ERF')
     
 end

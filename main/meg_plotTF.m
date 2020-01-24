@@ -32,11 +32,11 @@ if nargin<2 % default selects channels 1:3
     disp('selectedChannels not specified, default [20,23,36,43,60]')
 end
 if nargin<1
-    load('data.mat'); % load dummy data
+    load('D3.mat'); % load dummy data
+    data = D3; 
 end
 
 %% setup
-saveFigs = 0;
 
 condNames = fieldnames(data);
 nConds = numel(condNames);
@@ -47,9 +47,14 @@ nFreqs = numel(selectedFreq);
 
 % check data
 sz = size(data.(condNames{1}));
-if numel(sz)~=3
-    error('data is expected to be 3-dimensional, with trials as the last dimension')
+if numel(sz)<2 || numel(sz)>3
+    error('data is expected to be at least 2-dimensional, with time as the first dimension, and channels second')
+elseif numel(sz)==2 
+    nTrials = 1; 
+elseif numel(sz)==3
+    nTrials = sz(3); 
 end
+nAllChannels = sz(2); 
     
 % check channels 
 if ~isnumeric(selectedChannels)
@@ -75,7 +80,7 @@ xtickms = p.tstart:500:p.tstop;
 
 ylims = [min(foi),max(foi)]; 
 xlims = [size(toi,1),size(toi,2)]; 
-clims = [0 15];
+% clims = [0 6000];
 
 nSamples = sz(1); 
 nfft = 2^nextpow2(nSamples);
@@ -104,6 +109,14 @@ for iC = 1:nConds
     
     tfAmps = permute(meanSpectrumAll,[3,2,1]); % foi x time
     meanTfAmps = squeeze(nanmean(tfAmps,1)); 
+    tfPows = tfAmps.^2; 
+    meanTfPows = meanTfAmps.^2; 
+    
+    % normalize
+    meanMeanAmps = nanmean(meanTfAmps,2);
+    meanMeanPows = nanmean(meanTfPows,2);
+    normAmps = meanTfAmps./meanMeanAmps-1;
+    normPows = meanTfPows./meanMeanPows-1;
     
     % store variables
     A.(cond).y = y; 
@@ -112,7 +125,10 @@ for iC = 1:nConds
     A.(cond).ampsMean = ampsMean; 
     A.(cond).tfAmps = tfAmps;
     A.(cond).meanTfAmps = meanTfAmps;
-    
+    A.(cond).tfPows = tfPows; 
+    A.(cond).meanTfPows = meanTfPows;
+    A.(cond).normAmps = normAmps; 
+    A.(cond).normPows = normPows; 
 end
 
 %% spectrogram plot 
@@ -129,10 +145,9 @@ for iC = 1:nConds
         set(gcf, 'Position',  [100, 100, 300*ceil(nConds/4), 300*ceil(nConds/4)])
     end
     hold on
-    imagesc(A.(cond).meanTfAmps) 
+    imagesc(A.(cond).meanTfPows) 
     xlim(xlims)
     ylim(ylims)
-    % xticklabels(num2str(xtickms))
     xlabel('time (s)')
     ylabel('frequency (Hz)')
     colorbar
@@ -155,21 +170,15 @@ for iC = 1:nConds
         subplot (ceil(nConds/3),nConds,iC)
     end
     hold on
-    for iF = 1:numel(foi)
-        meanPow(iF) = nanmean(A.(cond).meanTfAmps(iF,:)); 
-        for iT = 1:numel(toi)
-            normPow(iF,iT) = A.(cond).meanTfAmps(iF,iT)/meanPow(iF)-1; 
-        end
-    end
-    imagesc(normPow)
+    imagesc(A.(cond).normPows)
     xlim(xlims)
     ylim(ylims)
     xlabel('time (s)')
     ylabel('frequency (Hz)')
     colorbar
-    caxis([-0.2 0.2])
+    caxis([-0.2 1])
     meg_timeFreqPlotLabels(toi,foi,xtick,ytick,p.eventTimes);
-    title(sprintf('normalized %s \n channels %s ',und2space(cond), num2str(selectedChannels)))
+    title(sprintf('power normalized %s \n channels %s ',und2space(cond), num2str(selectedChannels)))
 end
 
 %% fourier plot
