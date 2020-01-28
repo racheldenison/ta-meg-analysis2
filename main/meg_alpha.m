@@ -9,8 +9,9 @@ function [A,fH,figNames] = meg_alpha(eyesClosedFile,sessionDir)
 %   eg: 'R1507_20190627'
 % 
 % OUPUT
-% fH 
+% fH
 %   figure handle 
+%   topo plot of individual peak alpha power ± 2Hz
 % figNames 
 % alpha 
 %   peak individual alpha (Hz)
@@ -37,7 +38,7 @@ sz = size(data);
 t = 1:sz(1); 
 
 taper          = 'hanning';
-foi            = 1:100;
+foi            = 1:25;
 t_ftimwin      = 10 ./ foi;
 toi            = t(1)/p.fSample:0.01:t(end)/p.fSample;
 tfAmps = [];
@@ -49,6 +50,8 @@ xtick = 1:50:numel(toi);
 
 ylims = [min(foi),max(foi)]; 
 xlims = [size(toi,1),size(toi,2)]; 
+
+load('data_hdr.mat')
 
 nSamples = t(end); 
 nfft = 2^nextpow2(nSamples);
@@ -128,10 +131,44 @@ A.alpha = A.f(peakIdx)+window(1);
 vline(A.alpha,'k')
 title(sprintf('%s alpha %.2f Hz',und2space(sessionDir),A.alpha))
 
+%% field trip multiploter tester
+
+cfg                     = [];
+cfg.dataset             = eyesClosedFile;
+eyesClosedData          = ft_preprocessing(struct('dataset',eyesClosedFile,...
+    'channel','MEG','continuous','yes'));
+
+cfg              = [];
+cfg.output       = 'pow';
+cfg.channel      = 'MEG';
+cfg.method       = 'mtmconvol';
+cfg.taper        = 'hanning';
+cfg.foi          = 2:1:30;                         % analysis 2 to 30 Hz in steps of 1 Hz 
+cfg.t_ftimwin    = ones(length(cfg.foi),1).*0.5;   % length of time window = 0.5 sec
+cfg.toi          = 0:0.5:120;                      % time window "slides" from -0.5 to 1.5 sec in steps of 0.05 sec (50 ms)
+TFRhann = ft_freqanalysis(cfg, eyesClosedData);
+A.TFRhann = TFRhann; 
+
+%% plot topo tfrhann
+cfg = [];
+% cfg.baseline     = [-0.5 -0.1];
+% cfg.baselinetype = 'absolute';
+% cfg.xlim         = [0.9 1.3];
+% cfg.zlim         = [0 6e-26];
+cfg.ylim         = [A.tfAlpha-2 A.tfAlpha+2];
+cfg.gridscale = 300;
+% cfg.style = 'straight';
+cfg.marker       = 'numbers';
+cfg.channel         = p.megChannels; 
+cfg.colorbar        = 'yes';
+figure
+ft_topoplotTFR(cfg, TFRhann);
+title(sprintf('%s alpha power, %d ± 2Hz',und2space(sessionDir),A.tfAlpha))
+
 %% return figure handle
 
 fH = sort(double(findobj(0,'Type','figure')));
-figNames = {'tf_EyesClosed','tf_Alpha','fftAlpha_EyesClosed'}; 
+figNames = {'tf_EyesClosed','tf_Alpha','fftAlpha_EyesClosed','topoalphapower'}; 
 
 end
 
