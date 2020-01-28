@@ -76,7 +76,17 @@ if inspectData
 end
 
 %% manually set bad channels
-badChannels = []; % in matlab 1-indexing
+
+load(sprintf('%s/prep/channels_rejected.mat',dataDir)); 
+chRejChar = char(channels_rejected); % cell to char array 
+chRejChar = chRejChar(:,end-2:end); % extract ch numbers in last three char 
+chRej = [];
+for iC = 1:size(chRejChar,1) 
+    chRej(iC) = str2double([chRejChar(iC,1) chRejChar(iC,2) chRejChar(iC,3)]); % to double 
+end
+chRej = chRej';
+
+badChannels = [chRej]; % in matlab 1-indexing
 
 %% run preproc for each run
 for iRun = 1:12 % :12 % :12 % nRuns
