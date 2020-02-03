@@ -1,9 +1,9 @@
-function meg_topoplot(vals, layout, cmap, highlightChannels)
+function meg_multiplot(vals, layout, cmap, highlightChannels)
 %
 % function meg_topoplot(vals, [layout], [cmap], [highlightChannels])
 %
 % INPUTS
-% vals is an Nx1 vector one value per channel, where N is number of channels
+% vals is an N x t matrix one value per channel, where N is number of channels
 % layout is an ft layout (see ft_prepare_layout). will generate layout from
 % custom file if not included.
 % cmap is a colormap of any size. default is parula, which we load from
@@ -40,19 +40,21 @@ if highlight
     cfg.highlight = 'on';
     cfg.highlightchannel = highlightChannels;
 else
-    cfg.marker = 'off';
+    cfg.showlabels = 'yes'; 
+    cfg.marker = 'numbers';
 end
 cfg.layout = layout;
 cfg.colormap = cmap;
 cfg.comment = 'no'; % no info about date, time, data range
 
 %% data
+p = meg_params('TA2');
 data = [];
 data.label = layout.label(1:nChannels);
 data.avg = vals;
-data.time = 0;
+data.time = p.tstart:p.tstop;
 data.dimord = 'chan_time';
 
 %% plot
-ft_topoplotER(cfg, data);
+ft_multiplotER(cfg, data);
 
