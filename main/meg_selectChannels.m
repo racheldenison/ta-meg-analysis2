@@ -1,4 +1,4 @@
-function C = meg_selectChannels(sessionDir,data)
+function [fH,figNames] = meg_selectChannels(sessionDir,data)
 
 % MEG_SELECTCHANNELS(sessionDir)
 %
@@ -10,24 +10,31 @@ function C = meg_selectChannels(sessionDir,data)
 % OUPUT
 %   C
 %       structure of top channels by analysis type 
+% or Pk 
+% peak analysis 
 %
 % Karen Tian
 % January 2020
 
-% snr, peak, topo, 
+
+%% channel selection method 
+
+selectPeak = 1; % sorts channels by ERF peak
+selectThreshold = 1; 
+selectAlpha = 0; % sorts channels by alpha power 
 
 %% setup
 
-% sessionDir = 'R0817_20190625';
-
+sessionDir = 'R0817_20181120';
 exptShortName = 'TA2';
 analStr = 'bietfp';
+
 exptDir = '/Users/kantian/Dropbox/Data/TA2/MEG'; 
 
 p = meg_params('TA2');
 
 fileBase = sessionDirToFileBase(sessionDir, exptShortName);
-
+% 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 matDir = sprintf('%s/mat', dataDir);
 preprocDir = sprintf('%s/preproc', dataDir);
@@ -35,13 +42,13 @@ preprocDir = sprintf('%s/preproc', dataDir);
 filename = sprintf('%s/%s_%s.sqd', preprocDir, fileBase, analStr); % *run file* 
 figDir = sprintf('%s/figures/%s', dataDir);
 
-behavDir = sprintf('%s/Behavior/%s/analysis', exptDir(1:end-4), sessionDir);
-behavFile = dir(sprintf('%s/*.mat', behavDir));
-behav = load(sprintf('%s/%s', behavDir, behavFile.name));
+% behavDir = sprintf('%s/Behavior/%s/analysis', exptDir(1:end-4), sessionDir);
+% behavFile = dir(sprintf('%s/*.mat', behavDir));
+% behav = load(sprintf('%s/%s', behavDir, behavFile.name));
 
-eyesClosedBase = sessionDirToFileBase(sessionDir, 'EyesClosed');
-eyesClosedFile = sprintf('%s/%s.sqd', dataDir, eyesClosedBase); 
-eyesClosedFileBI = sprintf('%s/%s_bi.sqd', dataDir, eyesClosedBase); 
+% eyesClosedBase = sessionDirToFileBase(sessionDir, 'EyesClosed');
+% eyesClosedFile = sprintf('%s/%s.sqd', dataDir, eyesClosedBase); 
+% eyesClosedFileBI = sprintf('%s/%s_bi.sqd', dataDir, eyesClosedBase); 
 
 %% data info
 
@@ -53,134 +60,184 @@ nTrial = sz(3);
 t = p.tstart:p.tstop;
 xlims = [min(t),max(t)]; % epoch time in ms
 
-%% selection method 
+% peak 
+vals = nanmean(data,3); % avg across trial 
+nPk = 7;
 
-selectPeak = 1; % sorts channels by ERF peak 
-selectAlpha = 0; % sorts channels by alpha power 
-
-%% select based off top peak 
-meanVal = nanmean(data,3); % avg across trial
-meanMeanVal = nanmean(meanVal); % avg across trial, then avg across time 
-
-normVal = meanVal'./meanMeanVal'-1; 
-colorbar
-caxis([-100 100])
-
-spacer = 5e-14; 
-
-figure
-for iC = peak.megChannels
-    hold on
-    plot(t, meanVal(:,iC) + spacer*(iC-1)) 
-end
-title('mean ch val')
-xlim(xlims)
-xlabel('time (ms)')
-ylabel('amplitude')
-vline(peak.eventTimes,'k',peak.eventNames)
-
-for iC = peak.megChannels 
-    val = meanVal(); 
-end
-
- 
-figure
-imagesc(meanVal')
-colorbar
-
-%     spacer = 40;
-%     figure
-%     for iF=1:nFields
-%         vals = data.(fieldName{iF});
-%         subplot (nFields,1,iF)
-%         hold on
-%         for iC = 1:nAllChannels
-%             meanTrial = nanmean(vals(:,iC,:),3);
-%             plot(t, abs(meanTrial) + spacer*iC)
-%         end
-%         title(sprintf('%s',fieldName{iF}))
-%         xlim(xlims)
-%         xlabel('time (ms)')
-%         ylabel('amplitude')
-%         vline(p.eventTimes,'k',p.eventNames)
-%     end
+% threshold by max(abs(amp))
+toi = p.eventTimes(2):p.eventTimes(3)+300; % times during which to check if max amp crossed  
+nChOI = 5; 
+percentileCh = (nChOI/nCh)*100; 
 
 %% peak selector
 
-vals = nanmean(data,3);
-nPk = 3;
-twindow = p.eventTimes(2):p.eventTimes(3)+300; % window to look for peaks, from T1 to T2+300
-
-for iC = 1:nCh
-    if nanmean(vals(:,iC),1)==0 % why getting flat channels? check preproc bad channel output
-        Pk.peaksPos(iC,:) = NaN;
-        Pk.peaksPosVals(iC,:) = NaN;
-        Pk.peaksNeg(iC,:) = NaN;
-        Pk.peaksNegVals(iC,:) = NaN;
-    else
-        % positive peaks
-        [pks,locs,~,prom] = findpeaks(vals(twindow,iC));
-        [~, idx] = sort(prom,1,'descend');
-        idx = sort(idx(1:nPk));
-        peaksPos = twindow(locs(idx));
-        peaksPosVals = vals(peaksPos,iC);
-        
-        % negative peaks
-        [pks,locs,~,prom] = findpeaks(-vals(twindow,iC));
-        [~, idx] = sort(prom,1,'descend');
-        idx = sort(idx(1:nPk));
-        peaksNeg = twindow(locs(idx));
-        peaksNegVals = vals(peaksNeg,iC);
-        
-        Pk.peaksPos(iC,:) = peaksPos;
-        Pk.peaksPosVals(iC,:) = peaksPosVals;
-        Pk.peaksNeg(iC,:) = peaksNeg;
-        Pk.peaksNegVals(iC,:) = peaksNegVals;  
+if selectPeak
+    % tWindow = p.eventTimes(2):p.eventTimes(3)+300; % window to look for peaks, from T1 to T2+300
+    % valsWindow = vals(tWindow,:);
+    for iC = 1:nCh
+        if nanmean(vals(:,iC),1)==0 % why getting flat channels? check preproc bad channel output
+            Pk.peaksPos(iC,:) = NaN;
+            Pk.peaksPosVals(iC,:) = NaN;
+            Pk.peaksNeg(iC,:) = NaN;
+            Pk.peaksNegVals(iC,:) = NaN;
+        else
+            % positive peaks
+            [pks,locs,~,prom] = findpeaks(vals(:,iC));
+            [~, idx] = sort(prom,1,'descend'); % idx sorted by desc prominence
+            % idx = find(prom>std(prom)*thresh); peak past threshold s
+            idx = sort(idx(1:nPk)); % idx ascending of top nPk prom
+            peaksPos = t(locs(idx));
+            peaksPosVals = pks(idx);
+            
+            % negative peaks
+            [pks,locs,~,prom] = findpeaks(-vals(:,iC));
+            [~, idx] = sort(prom,1,'descend');
+            idx = sort(idx(1:nPk));
+            peaksNeg = t(locs(idx));
+            peaksNegVals = -pks(idx);
+            
+            Pk.peaksPos(iC,:)       = peaksPos;
+            Pk.peaksPosVals(iC,:)   = peaksPosVals;
+            Pk.peaksNeg(iC,:)       = peaksNeg;
+            Pk.peaksNegVals(iC,:)   = peaksNegVals;
+        end
     end
+    
+    % subplot sizing
+    nRow = 10;
+    nBreak = 35;
+    nCol = ceil(nBreak/nRow);
+    
+    figure
+    set(gcf,'Position',[100 100 2400 1200])
+    hold on
+    nFig = 1;
+    for iC = 1:nCh
+        if mod(iC,nBreak) == 0 % new figure at breakpoints
+            figure
+            set(gcf,'Position',[100 100 2400 1200])
+            hold on
+            nFig = nFig + 1;
+        end
+        subplot(nRow,nCol,iC-(nBreak*(nFig-1))+1)
+        hold on
+        plot(t,vals(:,iC),'LineWidth',1)
+        plot(Pk.peaksPos(iC,:), Pk.peaksPosVals(iC,:), '.g', 'MarkerSize', 10)
+        plot(Pk.peaksNeg(iC,:), Pk.peaksNegVals(iC,:), '.b', 'MarkerSize', 10)
+        xlim(xlims)
+        vline(p.eventTimes,'k',p.eventNames)
+        yline(0,'--');
+        % vline(Pk.peaksPos(iC,:),'g')
+        % vline(Pk.peaksNeg(iC,:),'b')
+        title(sprintf('channel %d',iC))
+        % ylim([min(min(vals)),max(max(vals))])
+    end
+    
+    % store results of peaks analysis
+    Pk.t         = t;
+    Pk.vals      = vals;
+    Pk.nPk       = nPk;
 end
 
-% subplot sizing 
-nRow = 10; 
-nBreak = 60; 
-nCol = ceil(nBreak/nRow); 
+%% threshhold selection 
+
+if selectThreshold 
+    
+    toiY = zeros(length(toi),1); 
+    absVals = abs(vals); 
+    toiVals = absVals(toi-p.tstart,:); % remember to rereference to 0 for indexing with epoch start time
+    toiMax = max(toiVals,[],1); 
+
+    thresholdPrctile = 100-percentileCh; % 96.8153% for 5 channels 
+    thresholdVal = prctile(toiMax,thresholdPrctile); % cutoff val
+    passCh = find(toiMax > thresholdVal); 
+    
+    % plot check 
+    figure
+    plot(toiMax)
+    hline(thresholdVal)
+    
+    % subplot sizing
+    nRow = 10;
+    nBreak = 35;
+    nCol = ceil(nBreak/nRow);
+    
+    figure
+    set(gcf,'Position',[100 100 2400 1200])
+    hold on
+    nFig = 1;
+    for iC = 1:nCh 
+        if mod(iC,nBreak) == 0 % new figure at breakpoints
+            figure
+            set(gcf,'Position',[100 100 2400 1200])
+            hold on
+            nFig = nFig + 1;
+        end
+        subplot(nRow,nCol,iC-(nBreak*(nFig-1))+1) % one subplot per channel 
+        hold on
+        plot(t,absVals(:,iC)) 
+        plot(toi,toiY,'k','LineWidth',3) 
+        xlim(xlims)
+        ylim([0,1.1*max(toiMax)])
+        vline(p.eventTimes,'k',p.eventNames)
+        yline(0,'--');
+        yline(thresholdVal,'r');
+        if ismember(iC,passCh)
+            yline(thresholdVal,'g'); % if channel passes threshold, turn line green
+        end
+        title(sprintf('channel %d',iC))
+    end
+    
+    disp(passCh)
+end
+
+%%  
+%     % try max method 
+%     window1 = p.eventTimes(2):p.eventTimes(3); % window to check for first max (T1) 
+%     [peak1, idx1] = max(vals(window1,:),[],1); % returns max within defined window, and index relative to window
+%     idx1 = idx1 + min(window1) - 1; % convert window to trial time 
+% 
+%     % T2 mean peak per channel
+%     window2 = p.eventTimes(3):p.eventTimes(3)+250; % window to check for second max 
+%     [peak2, idx2] = max(vals(window2,:),[],1); % returns max within defined window, and index relative to window
+%     idx2 = idx2 + min(window2) - 1; % convert window to trial time 
+%     
+%     % save 
+%     Pk.max1 = peak1; 
+%     Pk.idx1 = idx1; 
+%     Pk.max2 = peak2; 
+%     Pk.idx2 = idx2; 
+%     
+%     % plot
+%     figure
+%     set(gcf,'Position',[100 100 2400 1200])
+%     hold on
+%     nFig = 1;
+%     for iC = 1:nCh
+%         if mod(iC,nBreak) == 0 % new figure at breakpoints
+%             figure
+%             set(gcf,'Position',[100 100 2400 1200])
+%             hold on
+%             nFig = nFig + 1;
+%         end
+%         subplot(nRow,nCol,iC-(nBreak*(nFig-1))+1)
+%         hold on
+%         plot(t,vals(:,iC))
+%         plot(Pk.peaksPos(iC,:), Pk.peaksPosVals(iC,:), '.g', 'MarkerSize', 10)
+%         plot(Pk.peaksNeg(iC,:), Pk.peaksNegVals(iC,:), '.b', 'MarkerSize', 10)
+%         xlim(xlims)
+%         vline(p.eventTimes,'k',p.eventNames)
+%         vline(Pk.idx1(iC),'r')
+%         vline(Pk.idx2(iC),'r')
+%         hline(0)
+%         title(sprintf('channel %d',iC))
+%     end
+    
+%% try a topo 
 
 figure
-set(gcf,'Position',[100 100 2400 1200])
-hold on
-nFig = 1; 
-for iC = 1:nCh
-    if mod(iC,nBreak) == 0 % new figure at breakpoints 
-        figure
-        set(gcf,'Position',[100 100 2400 1200])
-        hold on
-        nFig = nFig + 1; 
-    end
-    subplot(nRow,nCol,iC-(nBreak*(nFig-1))+1)
-    hold on
-    plot(t,vals(:,iC))
-    plot(Pk.peaksPos(iC,:), Pk.peaksPosVals(iC,:), '.g', 'MarkerSize', 30)
-    plot(Pk.peaksNeg(iC,:), Pk.peaksNegVals(iC,:), '.b', 'MarkerSize', 30)
-    vline(p.eventTimes,'k',p.eventNames)
-    xlim(xlims)
-    title(sprintf('%d',iC))
-end
-
-
-% figure
-% plot(t(locs), p, '.') % visualize peak prominence
-
-
-
-% store results of peaks analysis
-peaks.measure = m;
-peaks.t = t;
-peaks.vals = vals;
-peaks.nPk = nPk;
-peaks.peaksPos = peaksPos;
-peaks.peaksPosVals = peaksPosVals;
-peaks.peaksNeg = peaksNeg;
-peaks.peaksNegVals = peaksNegVals;
-
+set(gcf,'Position',[100 100 800 800])
+meg_multiplot(vals', [], [], passCh)
 
 %% select based off top alpha channels 
 
@@ -202,13 +259,15 @@ end
 
 %% save figs
 
-fH = sort(findobj('Type','figure'));
-figNames = {'TopChannels_Alpha'};
-rd_saveAllFigs(fH, figNames, sessionDir, figDir, [])
+fH = sort(double(findobj(0,'Type','figure')));
+% figNames = {'TopChannels_Alpha'};
+figNames = {'ERFPeaks1','ERFPeaks2','ERFPeaks3','ERFPeaks4','ERFPeaks5','TopoERF'}
+% rd_saveAllFigs(fH, figNames, sessionDir, figDir, [])
 
 %% save top channels 
 
-save(sprintf('%s/C.mat',matDir),'C')
+save(sprintf('%s/Pk.mat',matDir),'Pk')
+% save(sprintf('%s/C.mat',matDir),'C')
 
 end
 
