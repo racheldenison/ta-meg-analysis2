@@ -23,7 +23,7 @@ if nargin < 3
     badChannels = [];
 end
 
-% preproc options
+%%  preproc options
 removeBadChannels = 1; % b dead and outlier sd channels 
 interpolate = 1; % i 
 
@@ -36,6 +36,7 @@ components = 1; % c, pca/ica
 rejectPC = 1; % auto reject 1st pc
 rejectIC = 0; % ask to reject ics
 
+%%
 % high pass filter options
 Fsample = 1000;
 Fhp = 0.1; % high pass frequency
@@ -219,14 +220,14 @@ if environmentalDenoise
     end
 end
 
-    % delete dead / interp file if exist
-    if deleteStepFiles
-        if exist(badFile, 'file')
-            delete(badFile);
-        elseif exist(interpFile, 'file')
-            delete(interpFile)
-        end
+% delete dead / interp file if exist
+if deleteStepFiles
+    if exist(badFile, 'file')
+        delete(badFile);
+    elseif exist(interpFile, 'file')
+        delete(interpFile)
     end
+end
 
 %% Save data preprocessed up to this point
 preFile = sprintf('%s_%s.sqd', filename(1:end-4), analStr);
@@ -367,7 +368,7 @@ img = meg_plotTime(preprocFileName, analStr, 0,0);
 
 %% save figs
 if saveFigs
-    runStr = meg_getTag(filename);
+    runStr = rd_getTag(filename);
     figSubDir = sprintf('%s/%s/%s', figDir, analStr, runStr);
     if ~exist(figSubDir,'dir')
         mkdir(figSubDir)

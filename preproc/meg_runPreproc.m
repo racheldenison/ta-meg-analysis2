@@ -1,4 +1,4 @@
-% rd_runMEGPreproc.m
+% meg_runMEGPreproc.m
 
 %% setup
 % exptDir = '/Volumes/DRIVE1/DATA/rachel/MEG/TADetectDiscrim/MEG';
@@ -9,11 +9,12 @@ exptDir = '/Users/kantian/Dropbox/Data/TA2/MEG';
 % exptDir = '/Users/kantian/Dropbox/Data/TANoise/MEG';
 % exptDir = pathToTANoise('MEG');
 
-% sessionDir = 'R0817_20190625';
-% fileBase = 'R0817_TA2_6.25.19';
+sessionDir = 'R1452_20190711';
+fileBase = sessionDirToFileBase(sessionDir,'TA2'); 
+% fileBase = 'R0890_TA2_11.21.18';
 
-sessionDir = 'R1547_20190729';
-fileBase = 'R1547_TA2_07.29.19';
+% sessionDir = 'R0817_20171213';
+% fileBase = 'R0817_TANoise_7.12.17';
 
 renameFiles = false;
 runsToRename = 1:12; %runs
@@ -77,23 +78,28 @@ end
 
 %% manually set bad channels
 
-load(sprintf('%s/prep/channels_rejected.mat',dataDir)); 
-chRejChar = char(channels_rejected); % cell to char array 
-chRejChar = chRejChar(:,end-2:end); % extract ch numbers in last three char 
-chRej = [];
-for iC = 1:size(chRejChar,1) 
-    chRej(iC) = str2double([chRejChar(iC,1) chRejChar(iC,2) chRejChar(iC,3)]); % to double 
-end
-chRej = chRej';
+load(sprintf('%s/prep/channels_rejected.mat',dataDir));
 
-badChannels = [chRej]; % in matlab 1-indexing
+if ~isempty(channels_rejected)
+    chRejChar = char(channels_rejected); % cell to char array
+    chRejChar = chRejChar(:,end-2:end); % extract ch numbers in last three char
+    chRej = [];
+    for iC = 1:size(chRejChar,1)
+        chRej(iC) = str2double([chRejChar(iC,1) chRejChar(iC,2) chRejChar(iC,3)]); % to double
+    end
+    % chRej = chRej'; % TA2
+    
+    badChannels = [chRej];
+else
+    badChannels = [];
+end
 
 %% run preproc for each run
-for iRun = 1:12 % :12 % :12 % nRuns
+for iRun = 1:12 % nRuns
     run = runs(iRun);
 %     runFile = sprintf('%s/%s_run%02d.sqd', preprocDir, fileBase, run);
     runFile = sprintf('%s/%s', preprocDir, runFiles(iRun).name);
-    preprocFileName = meg_preproc(runFile, figDir, badChannels); % edit Preproc file here  rd_kt_MEGPreproc
+    preprocFileName = meg_preproc(runFile, figDir, badChannels); % preproc script 
 end
 
 %% combine run files into preprocessed sqd
@@ -102,7 +108,7 @@ outFileName = sprintf('%s_%s.sqd', fileBase, analStr);
 outfile = rd_combineSqd(preprocDir, outFileName, analStr)
 
 %% if combining sqd after preprocessing already done
-outfile = rd_combineSqd(preprocDir, outFileName, '')
+% outfile = rd_combineSqd(preprocDir, outFileName, '')
 
 %% view triggers for the combined file
 rd_checkTriggers(outfile);
