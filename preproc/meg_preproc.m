@@ -205,7 +205,7 @@ if environmentalDenoise
     
     % convert to time x trials x channels
     data = permute(data,[1 3 2]);
-    data = meg_environmental_denoising_new(data, opts);
+    data = meg_environmentalDenoising(data, opts);
     data = permute(data,[1 3 2]); % convert back
     
     if plotFigs
