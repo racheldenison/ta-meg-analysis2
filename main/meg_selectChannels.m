@@ -6,12 +6,6 @@ function [fH,figNames] = meg_selectChannels(sessionDir,data)
 % sessionDir 
 % data 
 %   matrix time x channel x trial 
-% 
-% OUPUT
-%   C
-%       structure of top channels by analysis type 
-% or Pk 
-% peak analysis 
 %
 % Karen Tian
 % January 2020
@@ -19,28 +13,28 @@ function [fH,figNames] = meg_selectChannels(sessionDir,data)
 
 %% channel selection method 
 
-selectPeak = 1; % sorts channels by ERF peak
-selectThreshold = 1; 
+selectPeak = 0; % sorts channels by ERF peak
+selectThreshold = 1; % selects channels that cross a threshold max(abs(amp))
 selectAlpha = 0; % sorts channels by alpha power 
 
 %% setup
 
-sessionDir = 'R0817_20181120';
-exptShortName = 'TA2';
-analStr = 'bietfp';
-
-exptDir = '/Users/kantian/Dropbox/Data/TA2/MEG'; 
-
-p = meg_params('TA2');
-
-fileBase = sessionDirToFileBase(sessionDir, exptShortName);
+% sessionDir = 'R0817_20190625';
+% exptShortName = 'TA2';
+% analStr = 'bietfp';
 % 
-dataDir = sprintf('%s/%s', exptDir, sessionDir);
-matDir = sprintf('%s/mat', dataDir);
-preprocDir = sprintf('%s/preproc', dataDir);
-
-filename = sprintf('%s/%s_%s.sqd', preprocDir, fileBase, analStr); % *run file* 
-figDir = sprintf('%s/figures/%s', dataDir);
+% exptDir = '/Users/kantian/Dropbox/Data/TA2/MEG'; 
+% 
+% p = meg_params('TA2');
+% 
+% fileBase = sessionDirToFileBase(sessionDir, exptShortName);
+% 
+% dataDir = sprintf('%s/%s', exptDir, sessionDir);
+% matDir = sprintf('%s/mat', dataDir);
+% preprocDir = sprintf('%s/preproc', dataDir);
+% 
+% filename = sprintf('%s/%s_%s.sqd', preprocDir, fileBase, analStr); % *run file* 
+% figDir = sprintf('%s/figures/%s', dataDir);
 
 % behavDir = sprintf('%s/Behavior/%s/analysis', exptDir(1:end-4), sessionDir);
 % behavFile = dir(sprintf('%s/*.mat', behavDir));
@@ -65,7 +59,8 @@ vals = nanmean(data,3); % avg across trial
 nPk = 7;
 
 % threshold by max(abs(amp))
-toi = p.eventTimes(2):p.eventTimes(3)+300; % times during which to check if max amp crossed  
+toi = p.eventTimes(2):p.eventTimes(3)+300; % times during which to check if max amp crossed with ref to epoch timing 
+toiIdx = toi-p.tstart; % reference to 1 timing 
 nChOI = 5; 
 percentileCh = (nChOI/nCh)*100; 
 
@@ -137,25 +132,46 @@ if selectPeak
     Pk.t         = t;
     Pk.vals      = vals;
     Pk.nPk       = nPk;
+    
 end
 
-%% threshhold selection 
+%% select based on max(abs(amp)) crossing threshhold
 
 if selectThreshold 
     
     toiY = zeros(length(toi),1); 
     absVals = abs(vals); 
-    toiVals = absVals(toi-p.tstart,:); % remember to rereference to 0 for indexing with epoch start time
-    toiMax = max(toiVals,[],1); 
+    toiVals = absVals(toi,:); 
+    [toiMax, Idx] = max(toiVals,[],1); 
+    maxIdx = toi(Idx); 
 
     thresholdPrctile = 100-percentileCh; % 96.8153% for 5 channels 
     thresholdVal = prctile(toiMax,thresholdPrctile); % cutoff val
     passCh = find(toiMax > thresholdVal); 
     
-    % plot check 
+    % plot bar check max(abs(amp)) channels
     figure
-    plot(toiMax)
-    hline(thresholdVal)
+    set(gcf,'Position',[100 100 800 300])
+    hold on
+    b = bar(toiMax,'FaceColor','flat'); 
+    b.CData = repmat([0.8 0.8 0.8],[nCh,1]);
+    b.CData(passCh,:) = repmat([0 1 0],[nChOI,1]); % highlight channels > threshold 
+    hline(thresholdVal,'k',sprintf('threshold = %d',thresholdVal))
+    title(sprintf('channels [%s] above threshold',num2str(passCh))) 
+    ylabel('max(abs(amp))')
+    xlabel('channel')
+    
+    % plot check group across time
+    figure
+    hold on 
+    plot(t,absVals)
+    plot(toi,toiY,'k','LineWidth',3) % highlight black time of interest for checking treshold
+    xlim(xlims)
+    ylim([0,1.1*max(toiMax)])
+    vline(p.eventTimes,'k',p.eventNames)
+    hline(thresholdVal,'k',sprintf('threshold = %d',thresholdVal))
+    xlabel('time (ms)')
+    ylabel('abs(amp)')
     
     % subplot sizing
     nRow = 10;
@@ -180,64 +196,52 @@ if selectThreshold
         xlim(xlims)
         ylim([0,1.1*max(toiMax)])
         vline(p.eventTimes,'k',p.eventNames)
-        yline(0,'--');
         yline(thresholdVal,'r');
         if ismember(iC,passCh)
             yline(thresholdVal,'g'); % if channel passes threshold, turn line green
         end
         title(sprintf('channel %d',iC))
+        rd_supertitle(sprintf('channels [%s] above threshold = %d',num2str(passCh),thresholdVal)) 
     end
     
-    disp(passCh)
-end
+    % plot only channels that pass threshold 
+    figure
+    set(gcf,'Position',[100 100 2400 1200])
+    hold on
+    for iC = 1:numel(passCh)
+        subplot(nCh,1,iC) % one subplot per channel
+        hold on
+        plot(t,absVals(:,passCh(iC)))
+        plot(toi,toiY,'k','LineWidth',3)
+        xlim(xlims)
+        ylim([0,1.1*max(toiMax)])
+        vline(p.eventTimes,'k',p.eventNames)
+        yline(thresholdVal,'g');
+    end
 
-%%  
-%     % try max method 
-%     window1 = p.eventTimes(2):p.eventTimes(3); % window to check for first max (T1) 
-%     [peak1, idx1] = max(vals(window1,:),[],1); % returns max within defined window, and index relative to window
-%     idx1 = idx1 + min(window1) - 1; % convert window to trial time 
-% 
-%     % T2 mean peak per channel
-%     window2 = p.eventTimes(3):p.eventTimes(3)+250; % window to check for second max 
-%     [peak2, idx2] = max(vals(window2,:),[],1); % returns max within defined window, and index relative to window
-%     idx2 = idx2 + min(window2) - 1; % convert window to trial time 
-%     
-%     % save 
-%     Pk.max1 = peak1; 
-%     Pk.idx1 = idx1; 
-%     Pk.max2 = peak2; 
-%     Pk.idx2 = idx2; 
-%     
-%     % plot
-%     figure
-%     set(gcf,'Position',[100 100 2400 1200])
-%     hold on
-%     nFig = 1;
-%     for iC = 1:nCh
-%         if mod(iC,nBreak) == 0 % new figure at breakpoints
-%             figure
-%             set(gcf,'Position',[100 100 2400 1200])
-%             hold on
-%             nFig = nFig + 1;
-%         end
-%         subplot(nRow,nCol,iC-(nBreak*(nFig-1))+1)
-%         hold on
-%         plot(t,vals(:,iC))
-%         plot(Pk.peaksPos(iC,:), Pk.peaksPosVals(iC,:), '.g', 'MarkerSize', 10)
-%         plot(Pk.peaksNeg(iC,:), Pk.peaksNegVals(iC,:), '.b', 'MarkerSize', 10)
-%         xlim(xlims)
-%         vline(p.eventTimes,'k',p.eventNames)
-%         vline(Pk.idx1(iC),'r')
-%         vline(Pk.idx2(iC),'r')
-%         hline(0)
-%         title(sprintf('channel %d',iC))
-%     end
+    disp(passCh)
     
-%% try a topo 
+    % save threshold info 
+    T.passCh = passCh; % channels that pass threshold 
+    T.nChOI = nChOI; % number of channels that pass threshold 
+    T.thresholdVal = thresholdVal; % threshold value 
+    T.thresholdPrctile = thresholdPrctile;  % threshold percentile of channels
+    T.toi = toi; % time of interest to look for max(abs(amp))
+    T.toiMax = toiMax; % max(abs(amp)) values within toi 
+    T.maxIdx = maxIdx; % idx of max w reference to epoch timing 
+    
+end
+    
+%% topo 
+
+% figure
+% set(gcf,'Position',[100 100 800 800])
+% meg_multiplot(vals', [], [], passCh') % ERF all channels avg trial 
 
 figure
 set(gcf,'Position',[100 100 800 800])
-meg_multiplot(vals', [], [], passCh)
+meg_topoplot(toiMax', [], [], passCh') % avg trial, avg time, highlight channels 
+title(sprintf('channels [%s] above threshold = %d',num2str(passCh),thresholdVal))
 
 %% select based off top alpha channels 
 
@@ -260,14 +264,28 @@ end
 %% save figs
 
 fH = sort(double(findobj(0,'Type','figure')));
+
+if selectThreshold
+    figNames = {'histMaxAmp','ERF_ThreshAllChannels','ERF_Thresh1','ERF_Thresh2','ERF_Thresh3','ERF_Thresh4','ERF_Thresh5','ERF_passCh','topoPassCh'};
+    figDirThresh = sprintf('%sthreshold%d',figDir,nChOI); 
+    if ~exist(figDirThresh,'dir')
+        mkdir(figDirThresh)
+    end
+    rd_saveAllFigs(fH, figNames, sessionDir, figDirThresh, [])
+end
+
 % figNames = {'TopChannels_Alpha'};
-figNames = {'ERFPeaks1','ERFPeaks2','ERFPeaks3','ERFPeaks4','ERFPeaks5','TopoERF'}
+% figNames = {'ERFPeaks1','ERFPeaks2','ERFPeaks3','ERFPeaks4','ERFPeaks5','TopoERF'}
 % rd_saveAllFigs(fH, figNames, sessionDir, figDir, [])
 
-%% save top channels 
+%% save info 
 
-save(sprintf('%s/Pk.mat',matDir),'Pk')
+% save(sprintf('%s/Pk.mat',matDir),'Pk')
 % save(sprintf('%s/C.mat',matDir),'C')
+
+if selectThreshold
+    save(sprintf('%s/T.mat',matDir),'T') % top channels by thresholding
+end
 
 end
 

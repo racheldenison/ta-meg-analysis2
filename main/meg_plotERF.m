@@ -32,8 +32,8 @@ end
 if nargin<4 % default plots avg trial
     plotAvgTrial = 1;
 end
-if nargin<3 % default plots single trial
-    plotSingleTrial = 1;
+if nargin<3 % default does not plot single trial
+    plotSingleTrial = 0;
 end
 if nargin<2 % default selects channels 1:3
     selectedChannels = [20,23,36,43,60];

@@ -225,7 +225,7 @@ for iC = 1:nConds
 end
 xlim([toi(1),toi(end)])
 ylabel('amp')
-xlabel('time (ms)')
+xlabel('time (s)')
 vline(p.eventTimes/1000,'k',p.eventNames)
 legend(condNames)
 title(sprintf('Frequency %d - %d (Hz)',selectedFreq(1),selectedFreq(end)))

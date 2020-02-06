@@ -37,8 +37,12 @@ cfg = [];
 cfg.style = 'straight'; % no contours
 cfg.interpolation = 'nearest'; % no smooth interpolation
 if highlight
-    cfg.highlight = 'on';
+    cfg.highlight = 'label';
     cfg.highlightchannel = highlightChannels;
+    cfg.highlightsize = 20; 
+    cfg.highlightcolor = [1 0 0];  
+    cfg.showlabels = 'yes'; 
+    % cfg.marker = 'numbers';
 else
     cfg.showlabels = 'yes'; 
     cfg.marker = 'numbers';

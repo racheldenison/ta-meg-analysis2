@@ -10,9 +10,10 @@ function data = meg_getData(sqdfile,p)
 % Karen Tian 
 % January 2020 
 
-dat = ft_read_data(sqdfile);
-hdr = ft_read_header(sqdfile);
+% dat = ft_read_data(sqdfile);
+% hdr = ft_read_header(sqdfile);
 
+tic
 cfg                     = [];
 cfg.dataset             = sqdfile;
 cfg.trialdef.prestim    = p.prestim; %0; %0.5; % sec
@@ -23,9 +24,10 @@ threshold = 2.5;
 
 prep_data          = ft_preprocessing(struct('dataset',sqdfile,...
     'channel','MEG','continuous','yes','trl',trl));
+toc
 
 %% read and concatenate data 
-
+tic
 input = prep_data; 
 
 vals = [];
@@ -38,7 +40,7 @@ dataConcat = vals; % use this as unfiltered concatenated data matrix chans x tim
 nTrials = size(input.trial,2);
 nChannels = size(input.trial{1},1); 
 nTime = size(input.trial{1},2); 
-
+toc
 %% reshape 
 
 % reshape concat time series into trial time series 
