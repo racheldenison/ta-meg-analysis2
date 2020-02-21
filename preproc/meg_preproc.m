@@ -48,8 +48,8 @@ direc = 'onepass-zerophase';
 precueChannel = 168; 
 blankChannel = 167; 
 trialDef.trialFunHandle = @mytrialfun_all;
-trialDef.prestim = 0.5; % 0.2;
-trialDef.poststim = 2.8; % 2.3;
+trialDef.prestim = 0.2; % preproc timing window (different from analysis window) 
+trialDef.poststim = 2.3; 
 trialDef.trig = [precueChannel,blankChannel]; 
 trialDef.nTrigsExpected = [];
 trialDef.threshold = 2.5; 
@@ -192,6 +192,7 @@ if interpolate
     end
     
     dataset = interpFile; 
+    badChannels = []; 
 end
 
 %% Denoise using reference channels (new meg-utils)
@@ -263,8 +264,10 @@ if TSPCA
         error('tspcaFile already exists ... will not overwrite. note that continuing the script will delete this file.')
     else
         fprintf('Running sqdDenoise\n');
-        sqdDenoise(sizeOfBlocks, shifts, 0, sourceFile, badChannels-1, 'no', ...
-            precueChannel, 'no', tspcaFile); % do not zero saturated 
+        sqdDenoise(sizeOfBlocks, shifts, 0, sourceFile, [], 'no', ...
+            precueChannel, 'yes', tspcaFile); % do not zero saturated 
+        % sqdDenoise(sizeOfBlocks, shifts, 0, sourceFile, badChannels-1, 'no', ...
+            % precueChannel, 'yes', tspcaFile); % do not zero saturated 
     end
     
     % plot comparison with basic environmental denoising
@@ -334,7 +337,7 @@ end
 
 %% PCA/ICA
 if components
-    [ft_cleandata, WorkFlow, pcStr, ft_PCA] = meg_pca_ica(dataset, badChannels, trialDef, rejectPC, rejectIC);
+    [ft_cleandata, WorkFlow, pcStr, ft_PCA] = meg_pca_ica(dataset, [], trialDef, rejectPC, rejectIC);
     analStr = [analStr pcStr];
     data(:,1:157) = ft_cleandata.trial{1}'./1e-15; 
     
