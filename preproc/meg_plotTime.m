@@ -1,4 +1,4 @@
-function img = meg_plotTime(sqdfile, analStr, rejectTrials, rejectChannels)
+function img = meg_plotTime(sqdfile, analStr, rejectTrials, rejectChannels, p)
 % MEG_PLOTTIME  Plots: (1) concatenated trial time series, (2) trial time
 % series averaged by channel, (3) fft 
 % 
@@ -10,7 +10,7 @@ function img = meg_plotTime(sqdfile, analStr, rejectTrials, rejectChannels)
 % rejectChannels = 1 reject, 0 do not reject 
 
 %% setup
-% session = 'R1507_20190hel627';
+% session = 'R1507_20190627';
 % session2= 'R1507_TA2_6.27.19';
 
 % figDir = '/Users/kantian/Dropbox/Carrasco_Lab/ta_meg_kt/figures';
@@ -31,9 +31,9 @@ hdr = ft_read_header(sqdfile);
 
 cfg                     = [];
 cfg.dataset             = sqdfile;
-cfg.trialdef.prestim    = 0.2; %0; %0.5; % sec
-cfg.trialdef.poststim   = 2.3; %2.3; %3.1;
-cfg.trialdef.trig       = [168,167]; %[168,167]; %[161:164,167]; %168 = precue, 167=blank
+cfg.trialdef.prestim    = p.prestim; %0; %0.5; % sec
+cfg.trialdef.poststim   = p.poststim; %2.3; %3.1;
+cfg.trialdef.trig       = p.trialDefTrig; %[168,167]; %[161:164,167]; %168 = precue, 167=blank
 threshold = 2.5;
 [trl,Events]            = mytrialfun_all(cfg,threshold,[]);
 
@@ -57,7 +57,7 @@ nTrials = size(input.trial,2);
 
 % time vectors 
 tConcat = 1:length(dataConcatTimeSeries); 
-tTrial = 1:2501; 
+tTrial = 1:p.trialTime; % ms ; 
 
 % plot to check 
 % figure
@@ -83,7 +83,7 @@ tTrial = 1:2501;
 % reshape concat time series into trial time series 
 toReshape = dataConcatTimeSeries'; 
 reshape1 = toReshape;
-reshape2 = reshape(reshape1,2501,nTrials,nChannels); 
+reshape2 = reshape(reshape1,p.trialTime,nTrials,nChannels); 
 reshape3 = permute(reshape2,[1 3 2]); 
 reshape4 = mean(reshape3,3); 
 trialTime = reshape3; % filtered time x channels x trials 
@@ -144,7 +144,7 @@ ylabel('Amplitude')
 subplot 312
 trialavg = nanmean(trialTime,3); 
 plot(tTrial,trialavg(:,:)) % trialed filtered data 
-xlim([0,2501]); 
+xlim([0,p.trialTime]); 
 ylim([-6e-13 6e-13])
 xlabel('Time (ms)')
 ylabel('Amplitude')
