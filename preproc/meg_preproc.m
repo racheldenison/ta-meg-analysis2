@@ -24,6 +24,10 @@ if nargin < 3
 end
 
 %%  preproc options
+
+exptShortName = 'Cupcake'; % TA2_Preproc, TANoise_Preproc, Cupcake
+p = meg_params(exptShortName); 
+
 removeBadChannels = 1; % b dead and outlier sd channels 
 interpolate = 1; % i 
 
@@ -33,8 +37,8 @@ TSPCA = 1; % t
 hpfilter = 1; % f 
 components = 1; % c, pca/ica
 
-rejectPC = 1; % auto reject 1st pc
-rejectIC = 0; % ask to reject ics
+rejectPC = 1; % auto reject 1st pc?
+rejectIC = 0; % auto reject ic?
 
 %%
 % high pass filter options
@@ -45,12 +49,10 @@ type = 'firws';
 direc = 'onepass-zerophase';
 
 % trial definition (for pca/ica)
-precueChannel = 168; 
-blankChannel = 167; 
 trialDef.trialFunHandle = @mytrialfun_all;
-trialDef.prestim = 0.2; % preproc timing window (different from analysis window) 
-trialDef.poststim = 2.3; 
-trialDef.trig = [precueChannel,blankChannel]; 
+trialDef.prestim = p.prestim; % preproc timing window (different from analysis window) 
+trialDef.poststim = p.poststim; 
+trialDef.trig = p.trialDefTrig; 
 trialDef.nTrigsExpected = [];
 trialDef.threshold = 2.5; 
 
@@ -265,7 +267,7 @@ if TSPCA
     else
         fprintf('Running sqdDenoise\n');
         sqdDenoise(sizeOfBlocks, shifts, 0, sourceFile, [], 'no', ...
-            precueChannel, 'yes', tspcaFile); % do not zero saturated 
+            p.channelForSaturatingChannels, 'yes', tspcaFile); % do not zero saturated 
         % sqdDenoise(sizeOfBlocks, shifts, 0, sourceFile, badChannels-1, 'no', ...
             % precueChannel, 'yes', tspcaFile); % do not zero saturated 
     end
@@ -367,7 +369,7 @@ meg_checkTriggers(dataset); % filename
 preprocFileName = sprintf('%s_%s.sqd', filename(1:end-4), analStr);
 
 %% figure concat time series, channel avg trial time series, fft
-img = meg_plotTime(preprocFileName, analStr, 0,0); 
+img = meg_plotTime(preprocFileName, analStr, 0, 0, p); 
 
 %% save figs
 if saveFigs
