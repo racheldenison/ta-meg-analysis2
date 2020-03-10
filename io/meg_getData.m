@@ -1,4 +1,4 @@
-function data = meg_getData(sqdfile,p) 
+function [prep_data, data] = meg_getData(sqdfile,p) 
 % function D = MEG_GETDATA(filename)
 %
 % INPUT
@@ -18,12 +18,13 @@ cfg                     = [];
 cfg.dataset             = sqdfile;
 cfg.trialdef.prestim    = p.prestim; %0; %0.5; % sec
 cfg.trialdef.poststim   = p.poststim; %2.3; %3.1;
-cfg.trialdef.trig       = [168,167]; %[168,167]; %[161:164,167]; %168 = precue, 167=blank
+cfg.trialdef.trig       = p.trialDefTrig; %[168,167]; %[161:164,167]; %168 = precue, 167=blank
 threshold = 2.5;
 [trl,Events]            = mytrialfun_all(cfg,threshold,[]);
 
 prep_data          = ft_preprocessing(struct('dataset',sqdfile,...
     'channel','MEG','continuous','yes','trl',trl));
+
 toc
 
 %% read and concatenate data 
@@ -31,7 +32,7 @@ tic
 input = prep_data; 
 
 vals = [];
-for iTrial = 1:length(input.trial) % 580 trials
+for iTrial = 1:length(input.trial) % 580 trials, 516
         vals2 = input.trial{1,iTrial}; % go through trial by trial cells 
         vals = [vals vals2]; % concat horizontally into trial x channel matrix 
 end
