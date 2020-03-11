@@ -42,6 +42,8 @@ switch expt
         p.blankChannel = 167; 
         p.trialDefTrig = [p.precueChannel,p.blankChannel]; 
         p.trialTime = 4401; % ms 
+        p.cueColors = [122/255 142/255 194/255; 225/255 124/255 96/255; 128/255 128/255 128/255];  % cueT1, cueT2, neutral 
+        p.colorAlpha = 0.75; % transparency for plots 
    
     case 'TANoise_Preproc'
         % add timing
