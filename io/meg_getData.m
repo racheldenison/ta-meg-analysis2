@@ -1,5 +1,5 @@
 function [prep_data, data] = meg_getData(sqdfile,p) 
-% function D = MEG_GETDATA(filename)
+% function [prep_data, data] = MEG_GETDATA(filename,parameters)
 %
 % INPUT
 %   filename: string path to sqd file 
@@ -34,9 +34,9 @@ input = prep_data;
 vals = [];
 for iTrial = 1:length(input.trial) % 580 trials, 516
         vals2 = input.trial{1,iTrial}; % go through trial by trial cells 
-        vals = [vals vals2]; % concat horizontally into trial x channel matrix 
+        vals = [vals vals2]; % concat horizontally: trial x channel matrix 
 end
-dataConcat = vals; % use this as unfiltered concatenated data matrix chans x time 
+dataConcat = vals; % concatenated data: chans x time 
  
 nTrials = size(input.trial,2);
 nChannels = size(input.trial{1},1); 
