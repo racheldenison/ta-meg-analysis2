@@ -9,7 +9,8 @@ function D = meg_slicer(data, cond, condNames, levelNames)
 % cond
 %   condition matrix, trials x conditions
 %   Each column is the condition associated with one slice. The value
-%   gives the (categorical) level of that condition.
+%   gives the (categorical) level of that condition. NaN values are
+%   excluded.
 %
 % condNames
 %   condition names cell array, 1 x conditions
@@ -97,7 +98,7 @@ w = []; % logical matrix for each slice, nTrials x nLevels
 nLevels = [];
 for iSlice = 1:nSlices
     sliceCond = cond(:,iSlice);
-    levels = unique(sliceCond);
+    levels = unique(sliceCond(~isnan(sliceCond)));
     nLevels(iSlice) = numel(levels);
     
     if nLevels ~= numel(levelNames{iSlice})
