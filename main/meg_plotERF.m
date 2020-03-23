@@ -1,4 +1,4 @@
-function [fH,figNames] = meg_plotERF(data,selectedChannels,plotSingleTrial,plotAvgTrial,plotAvgChannel)
+function [fH,figNames] = meg_plotERF(data,p,selectedChannels,plotSingleTrial,plotAvgTrial,plotAvgChannel)
 
 % MEG_PLOTERF(data,selectedChannels,plotSingleTrial,plotAvgTrial)
 %
@@ -6,6 +6,8 @@ function [fH,figNames] = meg_plotERF(data,selectedChannels,plotSingleTrial,plotA
 % data
 %   structure of condition cells containing
 %       data matrix, time x channels x trials
+% p
+%   params with expt short type timing info
 % selectedChannels
 %   vector, default 1:157 meg channels
 % plotSingleTrial by channel by condition
@@ -26,18 +28,22 @@ function [fH,figNames] = meg_plotERF(data,selectedChannels,plotSingleTrial,plotA
 
 %% args
 
-if nargin<5
+if nargin<6
     plotAvgChannel = 1;
 end
-if nargin<4 % default plots avg trial
+if nargin<5 % default plots avg trial
     plotAvgTrial = 1;
 end
-if nargin<3 % default does not plot single trial
-    plotSingleTrial = 0;
+if nargin<4 % default does not plot single trial
+    plotSingleTrial = 1;
 end
-if nargin<2 % default selects channels 1:3
+if nargin<3 % default selects channels 1:3
     selectedChannels = [20,23,36,43,60];
     disp('selectedChannels not specified, default [20,23,36,43,60]')
+end
+if nargin<2
+    p = meg_params('TA2_Analysis'); 
+    disp('timing parameters not specified, using TA2 analysis')
 end
 if nargin<1
     load('D3.mat'); % load dummy data
@@ -50,9 +56,11 @@ condNames = fieldnames(data);
 nConds = numel(condNames);
 nChannels = numel(selectedChannels);
 
-p = meg_params('TA2');
 t = p.tstart:p.tstop;
 xlims = [min(t),max(t)];
+
+cueColors = p.cueColors; 
+colorAlpha = p.colorAlpha; 
 
 %% checks
 
@@ -92,58 +100,14 @@ if plotSingleTrial
         rd_supertitle2(sprintf(sprintf('channel %d',iC)))
     end
     
-    % test peaks
-%     spacer = 40;
-%     figure
-%     for iF=1:nFields
-%         vals = data.(fieldName{iF});
-%         subplot (nFields,1,iF)
-%         hold on
-%         for iC = 1:nAllChannels
-%             meanTrial = nanmean(vals(:,iC,:),3);
-%             plot(t, abs(meanTrial) + spacer*iC)
-%         end
-%         title(sprintf('%s',fieldName{iF}))
-%         xlim(xlims)
-%         xlabel('time (ms)')
-%         ylabel('amplitude')
-%         vline(p.eventTimes,'k',p.eventNames)
-%     end
-    
 end
-
-%% single channel find peaks 
-
-% find peaks
-% figure 
-% for iF=1:nFields
-%     vals = data.(fieldName{iF});
-%     subplot (nFields,1,iF)
-%     hold on
-%     spacer = 200; 
-%     for iC = 1:20
-%         meanTrial = abs(nanmean(vals(:,iC,:),3));
-%         [pks,locs,w,prom] = findpeaks(meanTrial,t); 
-%         pkinfo = [pks locs' w' prom];
-%         [pSort,pIdx] = sort(prom,'descend');
-%         
-%         plot(t, meanTrial + iC*spacer)
-%         topPeaks = pIdx(1:3); 
-%         plot(locs(topPeaks),pks(topPeaks)+iC*spacer,'.','MarkerSize',30,'Color',[0,1,0])
-%         
-%     end
-%     title(sprintf('%s',fieldName{iF}))
-%     xlim(xlims)
-%     xlabel('time (ms)')
-%     ylabel('amplitude')
-%     vline(p.eventTimes,'k',p.eventNames)
-% end
 
 %% plot ERF average trial by channel
 
 if plotAvgTrial
     
-    figure
+    figure 
+    set(gcf,'Position',[100 100 1500 1200])
     for iC=selectedChannels
         for iF=1:nConds
             vals = data.(condNames{iF});
@@ -152,7 +116,8 @@ if plotAvgTrial
             idx = find(selectedChannels==iC);
             subplot (nChannels,1,idx)
             hold on
-            plot(t, meanChannel)
+            figERF = plot(t, meanChannel,'Color',cueColors(iF,:),'LineWidth',2); 
+            figERF.Color(4) = colorAlpha; 
         end
         xlim(xlims)
         vline(p.eventTimes,'k',p.eventNames)
@@ -176,7 +141,8 @@ if plotAvgChannel
         meanTrial = nanmean(vals(:,selectedChannels,:),3);
         meanChannel = nanmean(meanTrial,2);
         hold on
-        plot(t, meanChannel)  
+        figERF = plot(t, meanChannel,'Color',cueColors(iF,:),'LineWidth',1.5);
+        figERF.Color(4) = colorAlpha; 
     end
     xlim(xlims)
     vline(p.eventTimes,'k',p.eventNames)
