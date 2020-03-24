@@ -119,6 +119,10 @@ close all
 % rd_saveAllFigs(fH3, figNames3, sessionDir, figDir, [])
 % save(sprintf('%s/Alpha.mat',matDir),'Alpha')
 
+%% Decoding orientation
+classNames = {'V','H'};
+[A, fH, figNames] = meg_plotDecode(data, p, classNames);
+
 end
 
  
