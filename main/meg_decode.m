@@ -27,15 +27,15 @@ function A = meg_decode(data, classLabels, classNames, p)
 % Rachel Denison
 % March 2020
 
-%% Deal with inputs
-if nargin < 4
-    p = struct([]);
+%% Inputs
+if nargin < 2
+    error('data and classLabels are required inputs')
 end
 if nargin < 3
     classNames = {'class1','class2'};
 end
-if nargin < 2
-    error('data and classLabels are required inputs')
+if nargin < 4
+    p = struct([]);
 end
 
 %% Unpack params structure
@@ -87,9 +87,7 @@ end
 
 %% Decoding setup
 getWeights = 1;
-syntheticTrials = 0;
 
-nSynTrials = 100; % if constructing synthetic trials
 nt = 5; % 5 % average this many trials together to improve SNR
 sp = 5; % 5 % sampling period
 kfold = 5;
@@ -106,28 +104,18 @@ end
 %% Decoding
 times = targetWindow(1):sp:targetWindow(2);
 
-vals1 = dataInput{1};
-vals2 = dataInput{2};
-
 classAccNT = [];
 for iRep = 1:nReps
     classAcc = [];
+    vals1 = dataInput{1};
+    vals2 = dataInput{2};
 
     % average trials
     if nt > 1
         vals1a = []; vals2a = [];
         n = size(vals1,3);
-        if syntheticTrials
-            nIdx = nSynTrials*nt;
-            trialsIdx = [];
-            for i = 1:ceil(nIdx/n)
-                trialsIdx = [trialsIdx randperm(n)];
-            end
-            startTrials = 1:nt:nIdx;
-        else
-            trialsIdx = randperm(n);
-            startTrials = 1:nt:n-nt; % n -> n-nt
-        end
+        trialsIdx = randperm(n);
+        startTrials = 1:nt:n-nt; % n -> n-nt
         for iST = 1:numel(startTrials)
             trIdx = trialsIdx(startTrials(iST):startTrials(iST)+nt-1);
             vals1a(:,:,iST) = mean(vals1(:,:,trIdx),3);
@@ -192,50 +180,46 @@ for iRep = 1:nReps
         end
     end
 
-    classAccNT(:,iC,iRep) = acc;
-    classModel{iC,iRep} = model;
+    classAccNT(:,iRep) = acc;
+    classModelNT{iRep} = model;
 end
 
 % trial average
-classAcc = mean(classAccNT,3);
+classAcc = mean(classAccNT,2);
 
 %% extract channel weights 
 if getWeights
     classWeightsNT = [];
-    for iC = 1:nC/2
-        for iTime = 1:numel(times)
-            for iRep = 1:nReps
-                model = classModel{iC,iRep}(iTime);
-                
-                w = model.SVs' * model.sv_coef;
-                b = -model.rho;
-                if (model.Label(1) == -1)
-                    w = -w; b = -b;
-                end
-                classWeightsNT(:,iTime,iC,iRep) = w;
+    for iTime = 1:numel(times)
+        for iRep = 1:nReps
+            model = classModelNT{iRep}(iTime);
+            
+            w = model.SVs' * model.sv_coef;
+            b = -model.rho;
+            if (model.Label(1) == -1)
+                w = -w; b = -b;
             end
+            classWeightsNT(iTime,:,iRep) = w;
         end
     end
-    classWeights = mean(classWeightsNT,4);
+    classWeights = mean(classWeightsNT,3);
 else
     classWeights = [];
 end
 
 %% store results
 A.classNames = classNames;
-A.targetWindows = targetWindow;
+A.targetWindow = targetWindow;
 A.decodingOps.channels = channels;
 A.decodingOps.nTrialsAveraged = nt;
 A.decodingOps.binSize = sp;
 A.decodingOps.kfold = kfold;
 A.decodingOps.svmops = svmops;
+A.decodingOps.analStr = decodeAnalStr;
 A.classTimes = times;
 A.classAccNT = classAccNT;
+A.classModelNT = classModelNT;
+A.classWeightsNT = classWeightsNT;
 A.classAcc = classAcc;
-A.classModel = classModel;
 A.classWeights = classWeights;
 
-% %% save analysis
-% if saveAnalysis
-%     save(sprintf('%s_%s_%s.mat',analysisFileName,analStr,decodeAnalStr), 'A')
-% end
