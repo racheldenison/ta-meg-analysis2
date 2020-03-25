@@ -1,4 +1,4 @@
-function [fH,figNames] = meg_selectChannels(sessionDir,data)
+function [fH,figNames,Pk] = meg_selectChannels(sessionDir,data)
 
 % MEG_SELECTCHANNELS(sessionDir)
 %
@@ -20,21 +20,19 @@ selectAlpha = 0; % sorts channels by alpha power
 %% setup
 
 % sessionDir = 'R0817_20190625';
-% exptShortName = 'TA2';
-% analStr = 'bietfp';
-% 
-% exptDir = '/Users/kantian/Dropbox/Data/TA2/MEG'; 
-% 
-% p = meg_params('TA2');
-% 
-% fileBase = sessionDirToFileBase(sessionDir, exptShortName);
-% 
-% dataDir = sprintf('%s/%s', exptDir, sessionDir);
-% matDir = sprintf('%s/mat', dataDir);
-% preprocDir = sprintf('%s/preproc', dataDir);
-% 
-% filename = sprintf('%s/%s_%s.sqd', preprocDir, fileBase, analStr); % *run file* 
-% figDir = sprintf('%s/figures/%s', dataDir);
+exptShortName = 'TA2';
+analStr = 'bietfp';
+
+exptDir = '/Users/kantian/Dropbox/Data/TA2/MEG'; 
+
+fileBase = sessionDirToFileBase(sessionDir, exptShortName);
+
+dataDir = sprintf('%s/%s', exptDir, sessionDir);
+matDir = sprintf('%s/mat', dataDir);
+preprocDir = sprintf('%s/preproc', dataDir);
+
+filename = sprintf('%s/%s_%s.sqd', preprocDir, fileBase, analStr); % *run file* 
+figDir = sprintf('%s/figures/%s', dataDir);
 
 % behavDir = sprintf('%s/Behavior/%s/analysis', exptDir(1:end-4), sessionDir);
 % behavFile = dir(sprintf('%s/*.mat', behavDir));
@@ -51,22 +49,22 @@ nT = sz(1);
 nCh = sz(2); 
 nTrial = sz(3); 
 
+vals = nanmean(data,3); % avg across trial 
+
+p = meg_params('TA2_Analysis'); 
 t = p.tstart:p.tstop;
 xlims = [min(t),max(t)]; % epoch time in ms
-
-% peak 
-vals = nanmean(data,3); % avg across trial 
-nPk = 7;
 
 % threshold by max(abs(amp))
 toi = p.eventTimes(2):p.eventTimes(3)+300; % times during which to check if max amp crossed with ref to epoch timing 
 toiIdx = toi-p.tstart; % reference to 1 timing 
-nChOI = 5; 
+nChOI = 7; 
 percentileCh = (nChOI/nCh)*100; 
 
 %% peak selector
 
 if selectPeak
+    nPk = 7;
     % tWindow = p.eventTimes(2):p.eventTimes(3)+300; % window to look for peaks, from T1 to T2+300
     % valsWindow = vals(tWindow,:);
     for iC = 1:nCh
@@ -141,13 +139,16 @@ if selectThreshold
     
     toiY = zeros(length(toi),1); 
     absVals = abs(vals); 
-    toiVals = absVals(toi,:); 
+    toiVals = absVals(toiIdx,:); 
     [toiMax, Idx] = max(toiVals,[],1); 
     maxIdx = toi(Idx); 
+    
+    [toiMaxSort, toiMaxChSort] = sort(toiMax,'descend'); 
 
     thresholdPrctile = 100-percentileCh; % 96.8153% for 5 channels 
     thresholdVal = prctile(toiMax,thresholdPrctile); % cutoff val
     passCh = find(toiMax > thresholdVal); 
+    
     
     % plot bar check max(abs(amp)) channels
     figure
@@ -203,20 +204,22 @@ if selectThreshold
         title(sprintf('channel %d',iC))
         rd_supertitle(sprintf('channels [%s] above threshold = %d',num2str(passCh),thresholdVal)) 
     end
-    
-    % plot only channels that pass threshold 
+   
+    % plot only channels that pass threshold, sorted by max 
     figure
     set(gcf,'Position',[100 100 2400 1200])
     hold on
-    for iC = 1:numel(passCh)
-        subplot(nCh,1,iC) % one subplot per channel
+    for iC = 1:nChOI
+        subplot(nChOI,1,iC) % one subplot per channel
         hold on
-        plot(t,absVals(:,passCh(iC)))
+        plot(t,absVals(:,toiMaxChSort(iC)))
         plot(toi,toiY,'k','LineWidth',3)
         xlim(xlims)
         ylim([0,1.1*max(toiMax)])
         vline(p.eventTimes,'k',p.eventNames)
         yline(thresholdVal,'g');
+        title(sprintf('channel %s',num2str(toiMaxChSort(iC))))
+        rd_supertitle2(sprintf('channels above threshold = %d',thresholdVal)) 
     end
 
     disp(passCh)
@@ -228,6 +231,8 @@ if selectThreshold
     T.thresholdPrctile = thresholdPrctile;  % threshold percentile of channels
     T.toi = toi; % time of interest to look for max(abs(amp))
     T.toiMax = toiMax; % max(abs(amp)) values within toi 
+    T.toiMaxSort = toiMaxSort; % sorted toiMax 
+    T.toiMaxChSort = toiMaxChSort; % channel idx of sorted toiMax
     T.maxIdx = maxIdx; % idx of max w reference to epoch timing 
     
 end
@@ -266,8 +271,8 @@ end
 fH = sort(double(findobj(0,'Type','figure')));
 
 if selectThreshold
-    figNames = {'histMaxAmp','ERF_ThreshAllChannels','ERF_Thresh1','ERF_Thresh2','ERF_Thresh3','ERF_Thresh4','ERF_Thresh5','ERF_passCh','topoPassCh'};
     figDirThresh = sprintf('%sthreshold%d',figDir,nChOI); 
+    figNames = {'histMaxAmp','ERF_ThreshAllChannels','ERF_Thresh1','ERF_Thresh2','ERF_Thresh3','ERF_Thresh4','ERF_Thresh5','ERF_passCh','topoPassCh'};
     if ~exist(figDirThresh,'dir')
         mkdir(figDirThresh)
     end
@@ -286,6 +291,9 @@ end
 if selectThreshold
     save(sprintf('%s/T.mat',matDir),'T') % top channels by thresholding
 end
+
+%% close 
+close all
 
 end
 
