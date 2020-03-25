@@ -1,15 +1,17 @@
-function [A,fH,figNames] = meg_plotTF(data,selectedChannels,selectedFreq)
+function [A,fH,figNames] = meg_plotTF(data,p,selectedChannels,selectedFreq)
 
 % MEG_PLOTERP(data,selectedChannels,plotSingleTrial,plotAvgTrial)
 %
 % INPUT
 % data
 %   structure of condition cells containing
-%       data matrix, time x channels x trials
+%   data matrix, time x channels x trials
 % selectedChannels
 %   vector of meg channels to inspect 
 % selectedFreq  
 %   vector of frequencies of interest
+% p 
+%   parameters (for expt short type)
 % OUPUT
 % A
 %   structure of time freq amp
@@ -23,13 +25,17 @@ function [A,fH,figNames] = meg_plotTF(data,selectedChannels,selectedFreq)
 
 %% args
 
-if nargin<3
+if nargin<4
     selectedFreq = 8:14;
     disp('selectedFreqs not specified, default 8-14 Hz (alpha band (Foxe 2011))')
 end
-if nargin<2 % default selects channels 1:3
+if nargin<3 % default selects channels 1:3
     selectedChannels = [20,23,36,43,60];
     disp('selectedChannels not specified, default [20,23,36,43,60]')
+end
+if nargin<2
+    p = meg_params('TA2_Analysis'); 
+    disp('timing parameters not specified, using TA2 analysis')
 end
 if nargin<1
     load('D3.mat'); % load dummy data
@@ -64,7 +70,6 @@ end
 %% params 
 
 % timing 
-p = meg_params('TA2');
 t = p.tstart:p.tstop;
 
 taper          = 'hanning';
@@ -80,11 +85,13 @@ xtickms = p.tstart:500:p.tstop;
 
 ylims = [min(foi),max(foi)]; 
 xlims = [size(toi,1),size(toi,2)]; 
-% clims = [0 6000];
 
 nSamples = sz(1); 
 nfft = 2^nextpow2(nSamples);
 Fsample = 1000; 
+
+cueColors = [122/255 142/255 194/255; 225/255 124/255 96/255; 128/255 128/255 128/255];  % cueT1, cueT2, neutral 
+colorAlpha = 0.75; % transparency for plots 
 
 %% time freq analysis
 
@@ -100,6 +107,8 @@ for iC = 1:nConds
     meanSpectrumAll = []; 
     for iCh = selectedChannels
         vals = squeeze(data.(cond)(:,iCh,:))'; % trials by samples
+        % valspad = padarray(vals,[0 5*p.fSample-nSamples],'post'); % pad
+        % so integer time freqs
         [spectrum,ntaper,freqoi,timeoi] = ft_specest_mtmconvol(vals, t/1000, ...
             'timeoi', toi, 'freqoi', foi, 'timwin', t_ftimwin, ...
             'taper', taper, 'dimord', 'chan_time_freqtap');
@@ -129,6 +138,7 @@ for iC = 1:nConds
     A.(cond).meanTfPows = meanTfPows;
     A.(cond).normAmps = normAmps; 
     A.(cond).normPows = normPows; 
+    A.(cond).selectedChannels = selectedChannels; 
 end
 
 %% spectrogram plot 
@@ -176,7 +186,7 @@ for iC = 1:nConds
     xlabel('time (s)')
     ylabel('frequency (Hz)')
     colorbar
-    caxis([-0.2 1])
+    caxis([min(min(A.(cond).normPows)) max(max(A.(cond).normPows))])
     meg_timeFreqPlotLabels(toi,foi,xtick,ytick,p.eventTimes);
     title(sprintf('power normalized %s \n channels %s ',und2space(cond), num2str(selectedChannels)))
 end
@@ -205,7 +215,8 @@ set(gcf, 'Position',  [100, 100, 800, 300])
 for iC = 1:nConds
     cond = condNames{iC};
     selectChAmps = nanmean(A.(cond).ampsMean(:,selectedChannels),2); 
-    loglog(A.(cond).f, selectChAmps) 
+    figFourier = loglog(A.(cond).f, selectChAmps,'Color',cueColors(iC,:));
+    figFourier.Color(4) = colorAlpha; 
     hold on
     xlim([A.(cond).f(1) A.(cond).f(end)])
     title('fft')
@@ -221,7 +232,8 @@ hold on
 for iC = 1:nConds
     cond = condNames{iC};
     fVals = squeeze(nanmean(A.(cond).meanTfAmps(selectedFreq,:),1));
-    plot(toi, fVals)
+    figfreq = plot(toi, fVals,'Color',cueColors(iC,:),'LineWidth',2);
+    figfreq.Color(4) = colorAlpha;   
 end
 xlim([toi(1),toi(end)])
 ylabel('amp')
@@ -230,8 +242,27 @@ vline(p.eventTimes/1000,'k',p.eventNames)
 legend(condNames)
 title(sprintf('Frequency %d - %d (Hz)',selectedFreq(1),selectedFreq(end)))
 
+%% diff TF 
+condition1 = A.cueT1.normPows; 
+condition2 = A.cueT2.normPows; 
+diffc2c1 = condition2 - condition1; % difference
+% meanDiff = nanmean(diffc2c1,2); % mean diff pow 
+% diff = diffc2c1./meanDiff-1; % then normalize 
+
+figure 
+set(gcf,'Position',[100 100 300 350])
+hold on
+imagesc(diffc2c1)
+xlim(xlims)
+ylim(ylims)
+xlabel('time (s)')
+ylabel('frequency (Hz)')
+colorbar
+meg_timeFreqPlotLabels(toi,foi,xtick,ytick,p.eventTimes);
+title('cue T2 - cue T1 (power, norm)')
+
 %% return figure handle
 
 fH = sort(double(findobj(0,'Type','figure')));
-figNames = {'TF','TFnorm','FFTAllCh','FFTSelectCh','Freq'}; 
+figNames = {'TF','TFnorm','FFTAllCh','FFTSelectCh','Freq','TF_diffT2T1'}; 
 
