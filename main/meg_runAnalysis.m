@@ -1,4 +1,17 @@
-function meg_runAnalysis(sessionDir)
+function meg_runAnalysis(exptName, sessionDir, user)
+
+% function meg_runAnalysis(exptName, sessionDir, [user])
+% 
+% INPUTS
+% exptName
+%   string, 'TA2' or 'TANoise'
+%
+% sessionDir
+%   string, e.g., 'R0817_20181120'
+%
+% user (optional)
+%   string giving the user name to determine path to data. defaults to
+%   'mcq' = get the data from the mcq server
 % 
 % setup 
 % read data
@@ -12,23 +25,24 @@ function meg_runAnalysis(sessionDir)
 % Karen Tian 
 % January 2020 
 
-%% user
-user = []; % 'mcq','karen'
+%% inputs
+if nargin == 0
+    exptName = 'TA2'; % TANoise
+    sessionDir = 'R0817_20181120';
+    user = 'mcq'; % 'mcq','karen'
+end
+if ~exist('user','var')
+    user = [];
+end
 
-%% session info 
-
-sessionDir = 'R0817_20181120';
-exptName = 'TA2'; % TANoise
+%% settings 
 analStr = 'bietfp';
-% exptDir = '/Users/kantian/Dropbox/Data/TA2/MEG'; 
-exptDir = meg_pathToTAMEG(exptName, user);
-
-p = meg_params('TA2_Analysis');
+analType = 'Analysis';
 readData = 0; % need to read data first time
 loadData = 1; % reload data matrix 
 
-%% setup 
-
+%% setup
+exptDir = meg_pathToTAMEG(exptName, user);
 fileBase = meg_sessionDirToFileBase(sessionDir, exptName);
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
@@ -40,12 +54,17 @@ figDir = sprintf('%s/figures/%s', dataDir);
 
 behavDir = sprintf('%s/Behavior/%s/analysis', exptDir(1:end-4), sessionDir);
 behavFile = dir(sprintf('%s/*.mat', behavDir));
-behav = load(sprintf('%s/%s', behavDir, behavFile.name));
-B = meg_behavior(behav); % update behavior structure
 
 eyesClosedBase = sessionDirToFileBase(sessionDir, 'EyesClosed');
 eyesClosedFile = sprintf('%s/%s.sqd', dataDir, eyesClosedBase); 
 eyesClosedFileBI = sprintf('%s/%s_bi.sqd', dataDir, eyesClosedBase); 
+
+% params
+p = meg_params(sprintf('%s_%s', exptName, analType));
+
+% behavior
+behav = load(sprintf('%s/%s', behavDir, behavFile.name));
+B = meg_behavior(behav); 
 
 %% make directories
 
@@ -71,7 +90,7 @@ end
 
 %% reject trials
 
-data = meg_rejectTrials(data,dataDir); % NaN rejected trials
+data = meg_rejectTrials(data, matDir); % NaN rejected trials
 
 %% peak channel selector
 
