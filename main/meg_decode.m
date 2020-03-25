@@ -44,15 +44,15 @@ if isfield(p,'t')
 else
     t = 1:size(data,1);
 end
-if isfield(p,'targetWindow')
-    targetWindow = p.targetWindow; 
+if ~isfield(p,'targetWindow') || isempty(p.targetWindow)
+    targetWindow = t([1 end]); 
 else
-    targetWindow = t([1 end]);
+    targetWindow = p.targetWindow;
 end
-if isfield(p,'channels')
-    channels = p.channels;
-else
+if ~isfield(p,'channels') || isempty(p.channels)
     channels = 1:size(data,2);
+else
+    channels = p.channels;
 end
 
 %% Setup
@@ -98,7 +98,7 @@ decodeAnalStr = sprintf('sp%d_nt%d', sp, nt);
 nReps = nt;
 
 %% Decoding
-times = targetWindow(1):sp:targetWindow(2);
+times = targetWindow(1):sp:targetWindow(2)-sp;
 
 classAccNT = [];
 for iRep = 1:nReps
@@ -166,7 +166,7 @@ for iRep = 1:nReps
         
         % check
         if size(Xs,1) < kfold
-            error('Size of data < kfold')
+            error('Size of data < kfold at time = %d', time)
         end
         
         % fit and cross validate classifier
