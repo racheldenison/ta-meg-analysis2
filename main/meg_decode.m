@@ -16,7 +16,7 @@ function A = meg_decode(data, classLabels, classNames, p)
 % p
 %   params structure (optional)
 %   t: time vector corresponding to data
-%   targetWindow: time window in which to decode
+%   targetWindow: [start end] time window in which to decode
 %   channels: channels to use for decoding, treated as indices
 %   data_hdr: ft header for plotting topographies
 %
@@ -28,13 +28,13 @@ function A = meg_decode(data, classLabels, classNames, p)
 % March 2020
 
 %% Inputs
-if nargin < 2
+if nargin < 2 || isempty(data) || isempty(classLabels)
     error('data and classLabels are required inputs')
 end
-if nargin < 3
+if nargin < 3 || isempty(classNames)
     classNames = {'class1','class2'};
 end
-if nargin < 4
+if nargin < 4 || isempty(p)
     p = struct([]);
 end
 
@@ -95,11 +95,7 @@ svmops = sprintf('-s 0 -t 0 -c 1 -v %d -q', kfold);
 svmopsNoCV = '-s 0 -t 0 -c 1 -q';
 decodeAnalStr = sprintf('sp%d_nt%d', sp, nt);
 
-if syntheticTrials
-    nReps = 1;
-else
-    nReps = nt;
-end
+nReps = nt;
 
 %% Decoding
 times = targetWindow(1):sp:targetWindow(2);
@@ -151,7 +147,6 @@ for iRep = 1:nReps
     labels = labels0(stratIdx);
     
     %% classify
-    tic
     acc = [];
     for iTime = 1:numel(times)
         fprintf(' ')
@@ -168,6 +163,11 @@ for iRep = 1:nReps
         
         % scale data
         Xs = zscore(X);
+        
+        % check
+        if size(Xs,1) < kfold
+            error('Size of data < kfold')
+        end
         
         % fit and cross validate classifier
         acc(iTime) = svmtrain(Y, Xs, svmops);

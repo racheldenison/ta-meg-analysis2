@@ -1,6 +1,6 @@
-function [A, fH, figNames] = meg_plotDecode(data, p, classNames)
+function [A, fH, figNames] = meg_plotDecode(data, p, classLabels, classNames)
 
-% function [A, fH, figNames] = meg_plotDecode(data, p, classNames)
+% function [A, fH, figNames] = meg_plotDecode(data, p, classLabels, classNames)
 %
 % ADD doc
 %
@@ -15,11 +15,18 @@ if nargin < 2
     p = [];
 end
 if nargin < 3
-    classNames = {'C1','C2'};
+    classLabels = [];
+end
+if nargin < 4 
+    classNames = [];
 end
 
 %% Setup
-load ../vis/data_hdr.mat
+if isfield(p,'hdr')
+    data_hdr = hdr;
+else
+    load data_hdr.mat
+end
 
 %% Fake data if requested
 if isempty(data)
@@ -37,6 +44,7 @@ end
 A = meg_decode(data, classLabels, classNames, p);
 
 %% Unpack analysis structure
+classNames = A.classNames;
 times = A.classTimes;
 targetWindow = A.targetWindow;
 classAcc = A.classAcc;
