@@ -73,7 +73,8 @@ legend(decodeTitle)
 figNames{1} = sprintf('plot_%s_%s', 'classAcc', decodeAnalStr);
 
 %% topo weights movie T1 and T2
-if ~isempty(classWeights)
+plotMovie = 0;
+if ~isempty(classWeights) && plotMovie
     clims = [-2 2];
     
     figure
@@ -89,27 +90,25 @@ if ~isempty(classWeights)
 end
 
 %% topo weights for specific time intervals
-twins = {[1 41], [101 191]};
+twins = {[1000 1100], [1100 1200]};
 
 if ~isempty(classWeights)
     clims = [0 1.5];
     
     for iTW = 1:numel(twins)
         twin = twins{iTW};
-        tidx = find(times==twin(1)):find(times==twin(2));
-        if isempty(tidx)
-            error('twin not found in times')
-        end
+        [~, tidx1] = min(abs(times-twin(1)));
+        [~, tidx2] = min(abs(times-twin(2)));
+        tidx = tidx1:tidx2;
         
         fH(end+1) = figure;
         vals = mean(abs(classWeights(tidx,:)));
         ssm_plotOnMesh(vals, '', [], data_hdr, '2d');
         set(gca,'CLim',clims)
         colorbar
-        title(decodeTitle)
-        rd_supertitle2(sprintf('%d-%d ms', twin(1), twin(2)))
+        rd_supertitle2(sprintf('%s, %d-%d ms', decodeTitle, times(tidx1), times(tidx2)))
         
-        figNames{end+1} = sprintf('map_svmWeights_%s_%d-%dms', decodeAnalStr, twin(1), twin(2));
+        figNames{end+1} = sprintf('map_svmWeights_%s_%d-%dms', decodeAnalStr, times(tidx1), times(tidx2));
     end
 end
 
