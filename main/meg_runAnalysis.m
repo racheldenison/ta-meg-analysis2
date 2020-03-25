@@ -16,7 +16,6 @@ function [selectedChannels,D] = meg_runAnalysis(sessionDir)
 
 %% session info 
 
-<<<<<<< HEAD
 % TA2
 exptShortName = 'TA2'; 
 exptDir = '/Users/kantian/Dropbox/Data/TA2/MEG'; 
@@ -30,23 +29,13 @@ p = meg_params('TA2_Analysis');
 analStr = 'bietfp';
 readData = 0; % newly prepare and read data
 loadData = 1; % load already prepared data matrix 
+
 selectChannels = 0; 
 loadSelectedChannels = 1; 
 
 plotERF = 0; 
 plotTF = 0;  
 saveTF = 0; % save time frequency mat 
-=======
-sessionDir = 'R0817_20181120';
-exptShortName = 'TA2'; % TANoise
-analStr = 'bietfp';
-% exptDir = '/Users/kantian/Dropbox/Data/TA2/MEG'; 
-exptDir = meg_pathToTA2('MEG');
-
-p = meg_params('TA2_Analysis');
-readData = 0; % need to read data first time
-loadData = 1; % reload data matrix 
->>>>>>> 2bf672834ab0403bff84627373e1c6c0ba838d8c
 
 %% setup 
 
@@ -129,7 +118,7 @@ end
 
 %% data direction 
 % flip based on peak prominence direction 
-data= data.*Pk.promDir'; 
+data = data.*Pk.promDir'; 
 
 %% peak channel selector
 
