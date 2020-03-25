@@ -15,6 +15,8 @@ t2CondIdx = strcmp(behav.responseData_labels,'target type T2');
 responseIdx = strcmp(behav.responseData_labels,'response');
 correctIdx = strcmp(behav.responseData_labels,'correct');
 rtIdx = strcmp(behav.responseData_labels,'RT');
+t1AxisIdx = strcmp(behav.responseData_labels,'target axis T1');
+t2AxisIdx = strcmp(behav.responseData_labels,'target axis T2');
 
 cueCond = behav.responseData_all(:,cueCondIdx);
 t1Cond = behav.responseData_all(:,t1CondIdx);
@@ -23,6 +25,8 @@ targetCond = [t1Cond t2Cond];
 response = behav.responseData_all(:,responseIdx);
 correct = behav.responseData_all(:,correctIdx);
 rt = behav.responseData_all(:,rtIdx);
+t1Axis = behav.responseData_all(:,t1AxisIdx);
+t2Axis = behav.responseData_all(:,t2AxisIdx);
 
 %% cue type (T1, T2)
 cuedTarget = nan(nTrials,1);
@@ -115,4 +119,5 @@ behav.discrimCI = discrimCI;
 behav.discrimHMFC = discrimHMFC;
 behav.acc = acc;
 behav.rt = rt;
+behav.t1t2Axes = [t1Axis t2Axis];
 

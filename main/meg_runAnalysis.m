@@ -16,6 +16,7 @@ function [selectedChannels,D] = meg_runAnalysis(sessionDir)
 
 %% session info 
 
+<<<<<<< HEAD
 % TA2
 exptShortName = 'TA2'; 
 exptDir = '/Users/kantian/Dropbox/Data/TA2/MEG'; 
@@ -35,6 +36,17 @@ loadSelectedChannels = 1;
 plotERF = 0; 
 plotTF = 0;  
 saveTF = 0; % save time frequency mat 
+=======
+sessionDir = 'R0817_20181120';
+exptShortName = 'TA2'; % TANoise
+analStr = 'bietfp';
+% exptDir = '/Users/kantian/Dropbox/Data/TA2/MEG'; 
+exptDir = meg_pathToTA2('MEG');
+
+p = meg_params('TA2_Analysis');
+readData = 0; % need to read data first time
+loadData = 1; % reload data matrix 
+>>>>>>> 2bf672834ab0403bff84627373e1c6c0ba838d8c
 
 %% setup 
 
@@ -51,6 +63,7 @@ figDir = sprintf('%s/figures/%s', dataDir);
 behavDir = sprintf('%s/Behavior/%s/analysis', exptDir(1:end-4), sessionDir);
 behavFile = dir(sprintf('%s/*.mat', behavDir));
 behav = load(sprintf('%s/%s', behavDir, behavFile.name));
+B = meg_behavior(behav); % update behavior structure
 
 % eyesClosedBase = sessionDirToFileBase(sessionDir, 'EyesClosed');
 % eyesClosedFile = sprintf('%s/%s.sqd', dataDir, eyesClosedBase); 
@@ -197,6 +210,17 @@ end
 % [Alpha,fH3,figNames3] = meg_alpha(eyesClosedFileBI,sessionDir);
 % rd_saveAllFigs(fH3, figNames3, sessionDir, figDir, [])
 % save(sprintf('%s/Alpha.mat',matDir),'Alpha')
+
+%% Decoding orientation
+% p = [];
+p.t = 1:size(data,1);
+p.targetWindow = [1000 1400];
+classNames = {'V','H'};
+
+for iT = 1:2
+    classLabels = B.t1t2Axes(:,iT);
+    [A(iT), fH{iT}, figNames{iT}] = meg_plotDecode(data, p, classLabels, classNames);
+end
 
 end
 
