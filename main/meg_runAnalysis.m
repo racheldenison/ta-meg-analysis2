@@ -12,13 +12,16 @@ function meg_runAnalysis(sessionDir)
 % Karen Tian 
 % January 2020 
 
+%% user
+user = []; % 'mcq','karen'
+
 %% session info 
 
 sessionDir = 'R0817_20181120';
-exptShortName = 'TA2'; % TANoise
+exptName = 'TA2'; % TANoise
 analStr = 'bietfp';
 % exptDir = '/Users/kantian/Dropbox/Data/TA2/MEG'; 
-exptDir = meg_pathToTA2('MEG');
+exptDir = meg_pathToTAMEG(exptName, user);
 
 p = meg_params('TA2_Analysis');
 readData = 0; % need to read data first time
@@ -26,7 +29,7 @@ loadData = 1; % reload data matrix
 
 %% setup 
 
-fileBase = sessionDirToFileBase(sessionDir, exptShortName);
+fileBase = meg_sessionDirToFileBase(sessionDir, exptName);
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 matDir = sprintf('%s/mat', dataDir);
