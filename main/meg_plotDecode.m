@@ -118,10 +118,11 @@ if ~isempty(classWeights) && plotMovie
 end
 
 %% topo weights for specific time intervals
-twins = {[1000 1100], [1100 1200]};
+% twins = {[1000 1100], [1100 1200]};
+twins = {targetWindow};
 
 if ~isempty(classWeights)
-    clims = [0 1.5];
+    clims = [0 0.5];
     
     for iTW = 1:numel(twins)
         twin = twins{iTW};

@@ -79,8 +79,9 @@ for iC = 1:nC
     class = classes(iC);
     
     wC = classLabels==class; % select data in class
-    wNaN = isnan(squeeze(data(1,1,:))); % remove nan data
-    w = wC & ~wNaN;
+%     wNaN = isnan(squeeze(data(1,1,:))); % remove nan data
+%     w = wC & ~wNaN;
+    w = wC;
     
     dataInput{iC} = data(:,channels,w);
 end
@@ -111,11 +112,11 @@ for iRep = 1:nReps
         vals1a = []; vals2a = [];
         n = size(vals1,3);
         trialsIdx = randperm(n);
-        startTrials = 1:nt:n-nt; % n -> n-nt
+        startTrials = 1:nt:n-nt;
         for iST = 1:numel(startTrials)
             trIdx = trialsIdx(startTrials(iST):startTrials(iST)+nt-1);
-            vals1a(:,:,iST) = mean(vals1(:,:,trIdx),3);
-            vals2a(:,:,iST) = mean(vals2(:,:,trIdx),3);
+            vals1a(:,:,iST) = nanmean(vals1(:,:,trIdx),3);
+            vals2a(:,:,iST) = nanmean(vals2(:,:,trIdx),3);
         end
         vals1 = vals1a; vals2 = vals2a;
     end

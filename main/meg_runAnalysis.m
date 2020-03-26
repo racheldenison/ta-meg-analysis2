@@ -30,7 +30,7 @@ function [A, selectedChannels, D] = meg_runAnalysis(exptName, sessionDir, user)
 if nargin == 0
     exptName = 'TA2'; % TANoise
     sessionDir = 'R1187_20181119';
-    user = 'rachel'; % 'mcq','karen','rachel'
+    user = 'mcq'; % 'mcq','karen','rachel'
 end
 if ~exist('user','var')
     user = [];
@@ -39,6 +39,7 @@ end
 %% settings 
 analStr = 'bietfp';
 analType = 'Analysis';
+sliceType = 'cue'; % 'all','cue'
 
 readData = 0; % need to read data first time
 loadData = 1; % reload data matrix 
@@ -166,14 +167,25 @@ end
 % end
 
 %% slice data by condition (here cue condition) 
-cond = B.cuedTarget; % attention condition 
-condNames = {'cueCond'}; 
-
-switch exptName 
-    case 'TA2'
-        levelNames = {{'cueT1','cueT2','neutral'}}; % levelNames = {{'neutral','cueT1','cueT2','other'}}; 
-    case 'TANoise'
-        levelNames = {{'cueT1','cueT2'}};
+switch sliceType
+    case 'all'
+        cond = B.targetPresent;
+        condNames = {'trial'};
+        levelNames = {{'all'}};
+        
+    case 'cue'
+        cond = B.cuedTarget; 
+        condNames = {'cueCond'};
+        
+        switch exptName
+            case 'TA2'
+                levelNames = {{'cueT1','cueT2','neutral'}}; 
+            case 'TANoise'
+                levelNames = {{'cueT1','cueT2'}};
+        end
+        
+    otherwise
+        error('sliceType not recognized')
 end
 
 [D, I] = meg_slicer(data, cond, condNames, levelNames); 
@@ -220,7 +232,7 @@ end
 if plotDecode
     targetNames = {'T1','T2'};
     classNames = {'V','H'};
-    twin = [0 400];
+    twin = [0 600];
     
     for iT = 1:2
         targetTime = p.eventTimes(strcmp(p.eventNames,targetNames{iT}));
