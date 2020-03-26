@@ -1,6 +1,6 @@
-function [selectedChannels,D] = meg_runAnalysis(exptName, sessionDir, user)
+function [selectedChannels, D] = meg_runAnalysis(exptName, sessionDir, user)
 
-% function meg_runAnalysis(exptName, sessionDir, [user])
+% function [selectedChannels, D] = meg_runAnalysis(exptName, sessionDir, [user])
 % 
 % INPUTS
 % exptName
@@ -48,8 +48,10 @@ loadSelectedChannels = 1;
 plotERF = 0; 
 plotTF = 0;  
 saveTF = 0; % save time frequency mat 
+plotDecode = 0;
 
 %% setup
+% i/o
 exptDir = meg_pathToTAMEG(exptName, user);
 fileBase = meg_sessionDirToFileBase(sessionDir, exptName);
 
@@ -158,26 +160,18 @@ data = data.*Pk.promDir';
 % end
 
 %% slice data by condition (here cue condition) 
-
-behav = meg_behavior(behav); 
-conds = behav.responseData_all; % trial x condition 
-cond = behav.cuedTarget; % attention condition 
-
+cond = B.cuedTarget; % attention condition 
 condNames = {'cueCond'}; 
 
-switch exptShortName 
+switch exptName 
     case 'TA2'
-        levelNames = {{'other','cueT1','cueT2','neutral'}}; % levelNames = {{'neutral','cueT1','cueT2','other'}}; 
+        levelNames = {{'cueT1','cueT2','neutral'}}; % levelNames = {{'neutral','cueT1','cueT2','other'}}; 
     case 'TANoise'
-        levelNames = {{'other','cueT1','cueT2'}};
+        levelNames = {{'cueT1','cueT2'}};
 end
-cond(isnan(cond))=0; 
 
 D = meg_slicer(data, cond, condNames, levelNames); 
 % D.cueT2subcueT1 = D.cueT2-D.cueT1; 
-
-field = 'other';
-D = rmfield(D,field);
 
 %% ERF analyses
 
@@ -217,14 +211,16 @@ end
 % save(sprintf('%s/Alpha.mat',matDir),'Alpha')
 
 %% Decoding orientation
-% p = [];
-p.t = 1:size(data,1);
-p.targetWindow = [1000 1400];
-classNames = {'V','H'};
-
-for iT = 1:2
-    classLabels = B.t1t2Axes(:,iT);
-    [A(iT), fH{iT}, figNames{iT}] = meg_plotDecode(data, p, classLabels, classNames);
+if plotDecode
+    % p = [];
+    p.t = 1:size(data,1);
+    p.targetWindow = [1000 1400];
+    classNames = {'V','H'};
+    
+    for iT = 1:2
+        classLabels = B.t1t2Axes(:,iT);
+        [A(iT), fH{iT}, figNames{iT}] = meg_plotDecode(data, p, classLabels, classNames);
+    end
 end
 
 end

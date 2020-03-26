@@ -31,6 +31,8 @@ switch expt
             'R1547_20190729', 'R1547_20190730'}; % N=10 x 2 sessions TA2
 end
 
+%%% RD suggestion: Instead of having many blocks of sessionNames, select
+%%% from the above list using indices
 
 %% TA2 March 5 block mat prep 
 sessionNames = {'R0898_20190723','R0898_20190724',...
