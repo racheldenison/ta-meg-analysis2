@@ -1,6 +1,6 @@
-function D = meg_slicer(data, cond, condNames, levelNames)
+function [D, I] = meg_slicer(data, cond, condNames, levelNames)
 
-% function D = meg_slicer(data, cond, condNames, levelNames)
+% function [D, I] = meg_slicer(data, cond, condNames, levelNames)
 %
 % INPUTS
 % data
@@ -27,6 +27,10 @@ function D = meg_slicer(data, cond, condNames, levelNames)
 %   slice data structure
 %   Each field is a condition combination containing a data matrix (time x 
 %   channels x trials) for the trials in that group.
+%
+% I
+%   trial indices for each condition combination
+%
 %
 % Rachel Denison
 % January 2020
@@ -131,5 +135,6 @@ for iCombo = 1:nCombos
     wCombo = sum(wSlices,2)==nSlices; % all conditions are met
         
     D.(comboName) = data(:,:,wCombo);
+    I.(comboName) = find(wCombo);
 end
      

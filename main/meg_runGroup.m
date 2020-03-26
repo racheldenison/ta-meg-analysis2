@@ -31,8 +31,8 @@ switch expt
             'R1547_20190729', 'R1547_20190730'}; % N=10 x 2 sessions TA2
 end
 
-%%% RD suggestion: Instead of having many blocks of sessionNames, select
-%%% from the above list using indices
+%%% RD suggestion: Instead of having many blocks of sessionNames, or 
+%%% deleting sessions later, select from the above lists using indices
 
 %% TA2 March 5 block mat prep 
 sessionNames = {'R0898_20190723','R0898_20190724',...
@@ -122,12 +122,14 @@ for i=1:numel(sessionNames)
     sessionDir = sessionNames{i}; 
     disp(sessionDir)
 
-    [selectedChannels,D] = meg_runAnalysis(exptName, sessionDir, user); 
+    [A, selectedChannels, D] = meg_runAnalysis(exptName, sessionDir, user); 
     close all
     if makeGroup
         groupD(i).sessionDir = sessionDir;
         groupD(i).data = D; % data by cue cond
         groupD(i).selectedChannels = selectedChannels;
+        
+        groupA{i} = A;
     end
 end
 

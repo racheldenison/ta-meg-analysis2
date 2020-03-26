@@ -1,6 +1,6 @@
-function [A, fH, figNames] = meg_plotDecode(data, p, classLabels, classNames)
+function [A, fH, figNames] = meg_plotDecode(D, I, p, classLabels, classNames)
 
-% function [A, fH, figNames] = meg_plotDecode(data, p, classLabels, classNames)
+% function [A, fH, figNames] = meg_plotDecode(D, I, p, classLabels, classNames)
 %
 % ADD doc
 %
@@ -9,7 +9,10 @@ function [A, fH, figNames] = meg_plotDecode(data, p, classLabels, classNames)
 
 %% Inputs
 if nargin < 1
-    data = [];
+    D = [];
+end
+if nargin < 2
+    I = [];
 end
 if nargin < 2
     p = [];
@@ -29,7 +32,7 @@ else
 end
 
 %% Fake data if requested
-if isempty(data)
+if isempty(D)
     fprintf('\nGenerating fake data ...\n')
     nT = 200;
     nCh = 157;
@@ -38,18 +41,42 @@ if isempty(data)
     data = rand(nT,nCh,nTrials);
     data(:,:,classLabels==1) = data(:,:,classLabels==1)*1.1;
     data = data + randn([nT nCh nTrials])*1;
+    D.fake = data;
+    I.fake = 1:nTrials;
 end
 
+%% Get conditions
+condNames = fields(D);
+nCond = numel(condNames);
+
 %% Decode
-A = meg_decode(data, classLabels, classNames, p);
+for iC = 1:nCond
+    c = condNames{iC};
+    data = D.(c);
+    
+    if isempty(I)
+        idx = 1:size(data,3);
+    else
+        idx = I.(c);
+    end
+
+    A.(c) = meg_decode(data, classLabels(idx), classNames, p);
+end
 
 %% Unpack analysis structure
-classNames = A.classNames;
-times = A.classTimes;
-targetWindow = A.targetWindow;
-classAcc = A.classAcc;
-classWeights = A.classWeights;
-decodeAnalStr = A.decodingOps.analStr;
+% same for all conds
+classNames = A.(c).classNames;
+times = A.(c).classTimes;
+targetWindow = A.(c).targetWindow;
+decodeAnalStr = A.(c).decodingOps.analStr;
+
+classAcc = [];
+classWeights = [];
+for iC = 1:nCond
+    c = condNames{iC};
+    classAcc(:,iC) = A.(c).classAcc;
+    classWeights(:,:,iC) = A.(c).classWeights;
+end
 
 %% Plot
 fH = [];
@@ -68,7 +95,8 @@ xlim(xlims)
 ylim(ylims)
 xlabel('Time (ms)')
 ylabel('Classification accuracy (%)')
-legend(decodeTitle)
+legend(condNames)
+title(decodeTitle)
 
 figNames{1} = sprintf('plot_%s_%s', 'classAcc', decodeAnalStr);
 
@@ -80,7 +108,7 @@ if ~isempty(classWeights) && plotMovie
     figure
     for iTime = 1:numel(times)
         subplot(1,1,1)
-        vals = classWeights(iTime,:);
+        vals = mean(classWeights(iTime,:,:),3);
         ssm_plotOnMesh(vals, '', [], data_hdr, '2d');
         set(gca,'CLim',clims)
         colorbar
@@ -102,7 +130,7 @@ if ~isempty(classWeights)
         tidx = tidx1:tidx2;
         
         fH(end+1) = figure;
-        vals = mean(abs(classWeights(tidx,:)));
+        vals = mean(mean(abs(classWeights(tidx,:,:)),1),3);
         ssm_plotOnMesh(vals, '', [], data_hdr, '2d');
         set(gca,'CLim',clims)
         colorbar

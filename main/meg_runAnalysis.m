@@ -1,6 +1,6 @@
-function [selectedChannels, D] = meg_runAnalysis(exptName, sessionDir, user)
+function [A, selectedChannels, D] = meg_runAnalysis(exptName, sessionDir, user)
 
-% function [selectedChannels, D] = meg_runAnalysis(exptName, sessionDir, [user])
+% function [A, selectedChannels, D] = meg_runAnalysis(exptName, sessionDir, [user])
 % 
 % INPUTS
 % exptName
@@ -45,6 +45,9 @@ loadData = 1; % reload data matrix
 selectChannels = 0; 
 loadSelectedChannels = 1; 
 
+%%% RD suggestion: switch between these options instead of toggling? so
+%%% this function runs only one type of analysis at a time. Suggest
+%%% returning an analysis structure A from each plotting function
 plotERF = 0; 
 plotTF = 0;  
 saveTF = 0; % save time frequency mat 
@@ -170,7 +173,7 @@ switch exptName
         levelNames = {{'cueT1','cueT2'}};
 end
 
-D = meg_slicer(data, cond, condNames, levelNames); 
+[D, I] = meg_slicer(data, cond, condNames, levelNames); 
 % D.cueT2subcueT1 = D.cueT2-D.cueT1; 
 
 %% ERF analyses
@@ -219,7 +222,7 @@ if plotDecode
     
     for iT = 1:2
         classLabels = B.t1t2Axes(:,iT);
-        [A(iT), fH{iT}, figNames{iT}] = meg_plotDecode(data, p, classLabels, classNames);
+        [A(iT), fH{iT}, figNames{iT}] = meg_plotDecode(D, I, p, classLabels, classNames);
     end
 end
 
