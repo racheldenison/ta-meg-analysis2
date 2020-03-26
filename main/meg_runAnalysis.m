@@ -29,8 +29,8 @@ function [A, selectedChannels, D] = meg_runAnalysis(exptName, sessionDir, user)
 %% inputs
 if nargin == 0
     exptName = 'TA2'; % TANoise
-    sessionDir = 'R0817_20181120';
-    user = 'mcq'; % 'mcq','karen'
+    sessionDir = 'R1187_20181119';
+    user = 'rachel'; % 'mcq','karen','rachel'
 end
 if ~exist('user','var')
     user = [];
@@ -43,7 +43,8 @@ analType = 'Analysis';
 readData = 0; % need to read data first time
 loadData = 1; % reload data matrix 
 selectChannels = 0; 
-loadSelectedChannels = 1; 
+loadSelectedChannels = 0; 
+flipData = 0; % flip data direction
 
 %%% RD suggestion: switch between these options instead of toggling? so
 %%% this function runs only one type of analysis at a time. Suggest
@@ -51,7 +52,7 @@ loadSelectedChannels = 1;
 plotERF = 0; 
 plotTF = 0;  
 saveTF = 0; % save time frequency mat 
-plotDecode = 0;
+plotDecode = 1;
 
 %% setup
 % i/o
@@ -139,7 +140,9 @@ end
 
 %% data direction 
 % flip based on peak prominence direction 
-data = data.*Pk.promDir'; 
+if flipData
+    data = data.*Pk.promDir';
+end
 
 %% peak channel selector
 
