@@ -55,19 +55,19 @@ saveTF = 0; % save time frequency mat
 plotDecode = 1;
 
 %% setup
-% i/o
+% directories
 exptDir = meg_pathToTAMEG(exptName, user);
-fileBase = meg_sessionDirToFileBase(sessionDir, exptName);
-
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 matDir = sprintf('%s/mat', dataDir);
 preprocDir = sprintf('%s/preproc', dataDir);
 prepDir = sprintf('%s/prep', dataDir);
-
-filename = sprintf('%s/%s_%s.sqd', preprocDir, fileBase, analStr); % *run file* 
-figDir = sprintf('%s/figures/%s', dataDir);
-
+figDir = sprintf('%s/figures/%s', dataDir, analStr);
 behavDir = sprintf('%s/Behavior/%s/analysis', exptDir(1:end-4), sessionDir);
+
+% file names
+fileBase = meg_sessionDirToFileBase(sessionDir, exptName);
+sqdFile = sprintf('%s/%s_%s.sqd', preprocDir, fileBase, analStr); % *run file* 
+dataFile = sprintf('%s/%s_%s_data.mat', matDir, fileBase, analStr);
 behavFile = dir(sprintf('%s/*.mat', behavDir));
 
 % eyesClosedBase = sessionDirToFileBase(sessionDir, 'EyesClosed');
@@ -97,14 +97,14 @@ end
 
 % read preprocessed sqd, prepare save to prep_data and data matrix 
 if readData
-    [prep_data, data] = meg_getData(filename,p); % time x channels x trials
-    save (sprintf('%s/%s_%s_data.mat',matDir,fileBase,analStr),'data', '-v7.3')
+    [prep_data, data] = meg_getData(sqdFile,p); % time x channels x trials
+    save (dataFile, 'data', '-v7.3')
     save (sprintf('%s/%s_%s_prep_data.mat',prepDir,fileBase,analStr),'prep_data', '-v7.3')
 end
 
 % if data already saved, then load data
 if loadData
-    load(sprintf('%s/%s_%s_data.mat',matDir,fileBase,analStr),'data')
+    load(dataFile, 'data')
 end
 
 %% reject trials
@@ -218,12 +218,13 @@ end
 
 %% Decoding orientation
 if plotDecode
-    % p = [];
-    p.t = 1:size(data,1);
-    p.targetWindow = [1000 1400];
+    targetNames = {'T1','T2'};
     classNames = {'V','H'};
+    twin = [0 400];
     
     for iT = 1:2
+        targetTime = p.eventTimes(strcmp(p.eventNames,targetNames{iT}));
+        p.targetWindow = targetTime + twin;
         classLabels = B.t1t2Axes(:,iT);
         [A(iT), fH{iT}, figNames{iT}] = meg_plotDecode(D, I, p, classLabels, classNames);
     end

@@ -15,8 +15,7 @@ p.fSample = 1000; % frame rate, Hz
 p.megChannels = 1:157; % 
 p.channelForSaturatingChannels = 168;
 
-switch expt
-    
+switch expt    
     case 'TA2_Preproc'
         % timing 
         p.eventTimes = [0 1050 1350 2300]; % accounting for 50ms photodiode delay
@@ -27,8 +26,6 @@ switch expt
         p.poststim = 2.3; 
         p.precueChannel = 168; 
         p.blankChannel = 167; 
-        p.trialDefTrig = [p.precueChannel,p.blankChannel]; 
-        p.trialTime = 2501; % ms 
         
     case 'TA2_Analysis'
         % timing 
@@ -39,9 +36,7 @@ switch expt
         p.prestim = 0.5; 
         p.poststim = 3.9; 
         p.precueChannel = 168; 
-        p.blankChannel = 167; 
-        p.trialDefTrig = [p.precueChannel,p.blankChannel]; 
-        p.trialTime = 4401; % ms 
+        p.blankChannel = 167;  
         p.cueColors = [122/255 142/255 194/255; 225/255 124/255 96/255; 128/255 128/255 128/255; 157/255 135/255 212/255];  % cueT1, cueT2, neutral, difference
         p.colorAlpha = 0.75; % transparency for plots 
    
@@ -55,8 +50,6 @@ switch expt
         p.poststim = 2.3; 
         p.precueChannel = 168; 
         p.blankChannel = 167; 
-        p.trialDefTrig = [p.precueChannel,p.blankChannel]; 
-        p.trialTime = 2501; % ms 
         
     case 'TANoise_Analysis'
         % add timing
@@ -67,8 +60,6 @@ switch expt
         p.poststim = 3.9; 
         p.precueChannel = 168; 
         p.blankChannel = 167; 
-        p.trialDefTrig = [p.precueChannel,p.blankChannel]; 
-        p.trialTime = 4401; % ms 
         
     case 'Cupcake'
         p.tstart = -1000; 
@@ -76,10 +67,15 @@ switch expt
         p.prestim = 1; 
         p.poststim = 2;
         triggerChannels = 160:167;
-        p.trialDefTrig = triggerChannels(2)+1; 
-        p.trialTime = 3001; % ms 
+        p.trialDefTrig = triggerChannels(2)+1;  
  
     otherwise 
         disp('expt type not recognized')
 end
+
+% all
+p.trialDefTrig = [p.precueChannel p.blankChannel];
+p.t = p.tstart:p.tstop;
+p.trialTime = numel(p.t); % ms
+
 
