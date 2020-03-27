@@ -96,7 +96,7 @@ svmops = sprintf('-s 0 -t 0 -c 1 -v %d -q', kfold);
 svmopsNoCV = '-s 0 -t 0 -c 1 -q';
 decodeAnalStr = sprintf('sp%d_nt%d', sp, nt);
 
-nReps = nt;
+nReps = 10;
 
 %% Decoding
 times = targetWindow(1):sp:targetWindow(2)-sp;
@@ -215,6 +215,7 @@ A.decodingOps.channels = channels;
 A.decodingOps.nTrialsAveraged = nt;
 A.decodingOps.binSize = sp;
 A.decodingOps.kfold = kfold;
+A.decodingOps.nReps = nReps;
 A.decodingOps.svmops = svmops;
 A.decodingOps.analStr = decodeAnalStr;
 A.classTimes = times;
