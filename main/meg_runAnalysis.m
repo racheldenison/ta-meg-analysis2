@@ -55,6 +55,9 @@ plotTF = 0;
 saveTF = 0; % save time frequency mat 
 plotDecode = 1;
 
+saveAnalysis = 1;
+saveFigs = 1;
+
 %% setup
 % directories
 exptDir = meg_pathToTAMEG(expt, user);
@@ -232,6 +235,7 @@ end
 
 %% Decoding orientation
 if plotDecode
+    analysisName = 'classAcc';
     targetNames = {'T1','T2'};
     classNames = {'V','H'};
     twin = [-50 550];
@@ -241,6 +245,18 @@ if plotDecode
         p.targetWindow = targetTime + twin;
         classLabels = B.t1t2Axes(:,iT);
         [A(iT), fH{iT}, figNames{iT}] = meg_plotDecode(D, I, p, classLabels, classNames);
+        
+        if saveFigs
+            for iF = 1:numel(fH{iT})
+                figNamesT{iF} = sprintf('%s_%s', figNames{iT}{iF}, targetNames{iT});
+            end
+            rd_saveAllFigs(fH{iT}, figNamesT, [], figDir)
+        end
+    end
+    
+    if saveAnalysis
+        decodeAnalStr = A(1).cueT1.decodingOps.analStr;
+        save(sprintf('%s/%s_%s_%sSlice_%s.mat', matDir, analysisName, analStr, sliceType, decodeAnalStr), 'A')
     end
 end
 

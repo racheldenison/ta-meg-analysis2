@@ -141,7 +141,3 @@ if ~isempty(classWeights)
     end
 end
 
-%% Save analysis
-% if saveAnalysis
-%     save(sprintf('%s_%s_%s.mat', analysisFileName, analStr, decodeAnalStr), 'A')
-% end

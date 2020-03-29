@@ -91,12 +91,11 @@ getWeights = 1;
 
 nt = 5; % 5 % average this many trials together to improve SNR
 sp = 5; % 5 % sampling period
+nReps = 10;
 kfold = 5;
 svmops = sprintf('-s 0 -t 0 -c 1 -v %d -q', kfold);
 svmopsNoCV = '-s 0 -t 0 -c 1 -q';
-decodeAnalStr = sprintf('sp%d_nt%d', sp, nt);
-
-nReps = 5;
+decodeAnalStr = sprintf('sp%d_nt%d_r%d', sp, nt, nReps);
 
 %% Decoding
 times = targetWindow(1):sp:targetWindow(2)-sp;
