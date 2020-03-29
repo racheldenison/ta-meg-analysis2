@@ -96,7 +96,7 @@ svmops = sprintf('-s 0 -t 0 -c 1 -v %d -q', kfold);
 svmopsNoCV = '-s 0 -t 0 -c 1 -q';
 decodeAnalStr = sprintf('sp%d_nt%d', sp, nt);
 
-nReps = 10;
+nReps = 5;
 
 %% Decoding
 times = targetWindow(1):sp:targetWindow(2)-sp;

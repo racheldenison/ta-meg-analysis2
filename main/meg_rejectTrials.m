@@ -1,4 +1,4 @@
-function data = meg_rejectTrials(data,trDir)
+function data = meg_rejectTrials(data, dataDir)
 
 % data = MEG_REJECTTRIALS(data)
 %
@@ -14,7 +14,11 @@ function data = meg_rejectTrials(data,trDir)
 
 %% NaN manually rejected channels 
 
-load(sprintf('%s/trials_rejected.mat',trDir), 'trials_rejected'); 
+try
+    load(sprintf('%s/mat/trials_rejected.mat', dataDir), 'trials_rejected'); 
+catch
+    load(sprintf('%s/prep/trials_rejected.mat', dataDir), 'trials_rejected'); 
+end
 data(:,:,trials_rejected) = NaN; 
 
 end

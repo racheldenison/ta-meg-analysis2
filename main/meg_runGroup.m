@@ -33,6 +33,8 @@ end
 
 %%% RD suggestion: Instead of having many blocks of sessionNames, or 
 %%% deleting sessions later, select from the above lists using indices
+sessions = 1:16;
+sessionNames = sessionNames(sessions);
 
 %% TA2 March 5 block mat prep 
 sessionNames = {'R0898_20190723','R0898_20190724',...
@@ -115,23 +117,25 @@ sessionNames = {'R0817_20171212', 'R0817_20171213',...
     };
 
 %% run analysis 
-
-makeGroup = 1; 
+makeGroup = 0; 
  
+groupA = [];
 for i=1:numel(sessionNames)
     sessionDir = sessionNames{i}; 
     disp(sessionDir)
 
-    [A, selectedChannels, D] = meg_runAnalysis(exptName, sessionDir, user); 
-    close all
+    [A, D, selectedChannels] = meg_runAnalysis(expt, sessionDir, user); 
+    groupA{i} = A;
+    pause(.1)
+%     close all
+    
     if makeGroup
         groupD(i).sessionDir = sessionDir;
         groupD(i).data = D; % data by cue cond
         groupD(i).selectedChannels = selectedChannels;
-        
-        groupA{i} = A;
     end
 end
+
 
 %% alpha finder
 for i=1:numel(sessionNames)
@@ -409,3 +413,29 @@ for i = 1:nSubjects
     ylim([0.8 1.25])
 end
 rd_supertitle2('peakT1')
+
+
+%% move files
+% sourceDir = '/e/1.3/p1/denison/Downloads/MEG';
+% exptDir = meg_pathToTAMEG(expt, user);
+% 
+% success = [];
+% for i=1:numel(sessionNames)
+%     if success(i)==0
+%         sessionDir = sessionNames{i};
+%         disp(sessionDir)
+%         
+%         dataDir = sprintf('%s/%s', exptDir, sessionDir);
+%         matDir = sprintf('%s/mat', dataDir);
+%         
+%         fileBase = meg_sessionDirToFileBase(sessionDir, expt);
+%         dataFile = sprintf('%s_bietfp_data.mat', fileBase);
+%         
+%         sourceFile = sprintf('%s/%s', sourceDir, dataFile);
+%         destFile = sprintf('%s/%s', matDir, dataFile);
+%         
+%         tic
+%         [success(i), message{i}] = movefile(sourceFile, destFile);
+%         toc
+%     end
+% end

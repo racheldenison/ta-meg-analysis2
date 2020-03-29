@@ -1,6 +1,6 @@
-function [A, selectedChannels, D] = meg_runAnalysis(exptName, sessionDir, user)
+function [A, D, selectedChannels] = meg_runAnalysis(expt, sessionDir, user)
 
-% function [A, selectedChannels, D] = meg_runAnalysis(exptName, sessionDir, [user])
+% function [A, D, selectedChannels] = meg_runAnalysis(exptName, sessionDir, [user])
 % 
 % INPUTS
 % exptName
@@ -28,7 +28,7 @@ function [A, selectedChannels, D] = meg_runAnalysis(exptName, sessionDir, user)
 
 %% inputs
 if nargin == 0
-    exptName = 'TA2'; % TANoise
+    expt = 'TA2'; % TANoise
     sessionDir = 'R1187_20181119';
     user = 'mcq'; % 'mcq','karen','rachel'
 end
@@ -57,7 +57,7 @@ plotDecode = 1;
 
 %% setup
 % directories
-exptDir = meg_pathToTAMEG(exptName, user);
+exptDir = meg_pathToTAMEG(expt, user);
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 matDir = sprintf('%s/mat', dataDir);
 preprocDir = sprintf('%s/preproc', dataDir);
@@ -66,7 +66,7 @@ figDir = sprintf('%s/figures/%s', dataDir, analStr);
 behavDir = sprintf('%s/Behavior/%s/analysis', exptDir(1:end-4), sessionDir);
 
 % file names
-fileBase = meg_sessionDirToFileBase(sessionDir, exptName);
+fileBase = meg_sessionDirToFileBase(sessionDir, expt);
 sqdFile = sprintf('%s/%s_%s.sqd', preprocDir, fileBase, analStr); % *run file* 
 dataFile = sprintf('%s/%s_%s_data.mat', matDir, fileBase, analStr);
 behavFile = dir(sprintf('%s/*.mat', behavDir));
@@ -76,7 +76,7 @@ behavFile = dir(sprintf('%s/*.mat', behavDir));
 % eyesClosedFileBI = sprintf('%s/%s_bi.sqd', dataDir, eyesClosedBase); 
 
 % params
-p = meg_params(sprintf('%s_%s', exptName, analType));
+p = meg_params(sprintf('%s_%s', expt, analType));
 
 % behavior
 behav = load(sprintf('%s/%s', behavDir, behavFile.name));
@@ -109,7 +109,7 @@ if loadData
 end
 
 %% reject trials
-data = meg_rejectTrials(data, matDir); % NaN manually rejected trials
+data = meg_rejectTrials(data, dataDir); % NaN manually rejected trials
 
 %% threshold channel selector 
 % if selectChannels
@@ -130,6 +130,8 @@ if selectChannels
     
     close all
     selectedChannels = Pk.passCh';
+else
+    selectedChannels = [];
 end
 
 if loadSelectedChannels
@@ -177,7 +179,7 @@ switch sliceType
         cond = B.cuedTarget; 
         condNames = {'cueCond'};
         
-        switch exptName
+        switch expt
             case 'TA2'
                 levelNames = {{'cueT1','cueT2','neutral'}}; 
             case 'TANoise'
@@ -232,7 +234,7 @@ end
 if plotDecode
     targetNames = {'T1','T2'};
     classNames = {'V','H'};
-    twin = [0 600];
+    twin = [-50 550];
     
     for iT = 1:2
         targetTime = p.eventTimes(strcmp(p.eventNames,targetNames{iT}));

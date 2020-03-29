@@ -122,7 +122,7 @@ end
 twins = {targetWindow};
 
 if ~isempty(classWeights)
-    clims = [0 0.5];
+    clims = [0 0.1];
     
     for iTW = 1:numel(twins)
         twin = twins{iTW};
