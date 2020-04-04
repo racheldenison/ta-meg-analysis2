@@ -1,7 +1,7 @@
 % meg_runGroup 
 
 %% setup
-user = 'mcq'; % 'mcq','karen'
+user = 'mcq'; % 'mcq','karen','rachel'
 expt = 'TA2';
 
 %% get session names

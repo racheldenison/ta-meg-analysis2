@@ -1,7 +1,7 @@
 function [A, D, selectedChannels] = meg_runAnalysis(expt, sessionDir, user)
 
 % function [A, D, selectedChannels] = meg_runAnalysis(exptName, sessionDir, [user])
-% 
+%
 % INPUTS
 % exptName
 %   string, 'TA2' or 'TANoise'
@@ -12,8 +12,8 @@ function [A, D, selectedChannels] = meg_runAnalysis(expt, sessionDir, user)
 % user (optional)
 %   string giving the user name to determine path to data. defaults to
 %   'mcq' = get the data from the mcq server
-% 
-% setup 
+%
+% setup
 % read data
 % reject trials
 % select channels
@@ -21,9 +21,9 @@ function [A, D, selectedChannels] = meg_runAnalysis(expt, sessionDir, user)
 % analysis: ERF
 % analysis: TF
 % analysis: alpha eyes closed
-% 
-% Karen Tian 
-% January 2020 
+%
+% Karen Tian
+% January 2020
 
 
 %% inputs
@@ -36,23 +36,24 @@ if ~exist('user','var')
     user = [];
 end
 
-%% settings 
+%% settings
 analStr = 'bietfp';
-analType = 'Analysis';
+paramType = 'Analysis';
+analType = 'decode'; % 'ERF','TF','decode'
 sliceType = 'cue'; % 'all','cue'
 
 readData = 0; % need to read data first time
-loadData = 1; % reload data matrix 
-selectChannels = 0; 
-loadSelectedChannels = 0; 
+loadData = 1; % reload data matrix
+selectChannels = 0;
+loadSelectedChannels = 0;
 flipData = 0; % flip data direction
 
 %%% RD suggestion: switch between these options instead of toggling? so
 %%% this function runs only one type of analysis at a time. Suggest
 %%% returning an analysis structure A from each plotting function
-plotERF = 0; 
-plotTF = 0;  
-saveTF = 0; % save time frequency mat 
+plotERF = 0;
+plotTF = 0;
+saveTF = 0; % save time frequency mat
 plotDecode = 1;
 
 saveAnalysis = 1;
@@ -70,20 +71,20 @@ behavDir = sprintf('%s/Behavior/%s/analysis', exptDir(1:end-4), sessionDir);
 
 % file names
 fileBase = meg_sessionDirToFileBase(sessionDir, expt);
-sqdFile = sprintf('%s/%s_%s.sqd', preprocDir, fileBase, analStr); % *run file* 
+sqdFile = sprintf('%s/%s_%s.sqd', preprocDir, fileBase, analStr); % *run file*
 dataFile = sprintf('%s/%s_%s_data.mat', matDir, fileBase, analStr);
 behavFile = dir(sprintf('%s/*.mat', behavDir));
 
 % eyesClosedBase = sessionDirToFileBase(sessionDir, 'EyesClosed');
-% eyesClosedFile = sprintf('%s/%s.sqd', dataDir, eyesClosedBase); 
-% eyesClosedFileBI = sprintf('%s/%s_bi.sqd', dataDir, eyesClosedBase); 
+% eyesClosedFile = sprintf('%s/%s.sqd', dataDir, eyesClosedBase);
+% eyesClosedFileBI = sprintf('%s/%s_bi.sqd', dataDir, eyesClosedBase);
 
 % params
-p = meg_params(sprintf('%s_%s', expt, analType));
+p = meg_params(sprintf('%s_%s', expt, paramType));
 
 % behavior
 behav = load(sprintf('%s/%s', behavDir, behavFile.name));
-B = meg_behavior(behav); 
+B = meg_behavior(behav);
 
 %% make directories
 
@@ -98,8 +99,7 @@ if ~exist(prepDir,'dir')
 end
 
 %% read data
-
-% read preprocessed sqd, prepare save to prep_data and data matrix 
+% read preprocessed sqd, prepare save to prep_data and data matrix
 if readData
     [prep_data, data] = meg_getData(sqdFile,p); % time x channels x trials
     save (dataFile, 'data', '-v7.3')
@@ -114,12 +114,12 @@ end
 %% reject trials
 data = meg_rejectTrials(data, dataDir); % NaN manually rejected trials
 
-%% threshold channel selector 
+%% threshold channel selector
 % if selectChannels
-%     meg_selectChannels(sessionDir,data); 
-% elseif loadSelectedChannels 
-%     load(sprintf('%s/T.mat',matDir),'T');  
-%     selectedChannels = T.passCh; 
+%     meg_selectChannels(sessionDir,data);
+% elseif loadSelectedChannels
+%     load(sprintf('%s/T.mat',matDir),'T');
+%     selectedChannels = T.passCh;
 % end
 
 if selectChannels
@@ -138,22 +138,22 @@ else
 end
 
 if loadSelectedChannels
-    chFile = sprintf('%s/Pk_avgProm.mat',matDir); 
+    chFile = sprintf('%s/Pk_avgProm.mat',matDir);
     load(chFile)
     selectedChannels = Pk.passCh';
-    channelDir = Pk.promDir(selectedChannels); % positive or negative peak 
+    channelDir = Pk.promDir(selectedChannels); % positive or negative peak
 end
 
-%% data direction 
-% flip based on peak prominence direction 
+%% data direction
+% flip based on peak prominence direction
 if flipData
     data = data.*Pk.promDir';
 end
 
 %% peak channel selector
 
-% try peak channels 
-% [fHpeak,figNamesPk] = meg_selectChannels(sessionDir, data); 
+% try peak channels
+% [fHpeak,figNamesPk] = meg_selectChannels(sessionDir, data);
 % figDirPeak = sprintf('%speak',figDir);
 % if ~exist(figDirPeak,'dir')
 %     mkdir(figDirPeak)
@@ -161,17 +161,17 @@ end
 % rd_saveAllFigs(fHpeak, figNamesPk, sessionDir, figDirPeak, [])
 % close all
 
-%% try alpha channel selector 
-% C = meg_selectChannels(sessionDir); 
+%% try alpha channel selector
+% C = meg_selectChannels(sessionDir);
 
-% selectedChannels = C.chSortAlpha(1:5)'; 
+% selectedChannels = C.chSortAlpha(1:5)';
 
 % figDirAlpha = sprintf('%sAlphaTop5',figDir);
 % if ~exist(figDirAlpha,'dir')
 %     mkdir(figDirAlpha)
 % end
 
-%% slice data by condition (here cue condition) 
+%% slice data by condition (here cue condition)
 switch sliceType
     case 'all'
         cond = B.targetPresent;
@@ -179,12 +179,12 @@ switch sliceType
         levelNames = {{'all'}};
         
     case 'cue'
-        cond = B.cuedTarget; 
+        cond = B.cuedTarget;
         condNames = {'cueCond'};
         
         switch expt
             case 'TA2'
-                levelNames = {{'cueT1','cueT2','neutral'}}; 
+                levelNames = {{'cueT1','cueT2','neutral'}};
             case 'TANoise'
                 levelNames = {{'cueT1','cueT2'}};
         end
@@ -193,73 +193,73 @@ switch sliceType
         error('sliceType not recognized')
 end
 
-[D, I] = meg_slicer(data, cond, condNames, levelNames); 
-% D.cueT2subcueT1 = D.cueT2-D.cueT1; 
+[D, I] = meg_slicer(data, cond, condNames, levelNames);
+% D.cueT2subcueT1 = D.cueT2-D.cueT1;
 
-%% ERF analyses
-
-if plotERF
-    [fH1,figNames1] = meg_plotERF(D,p,selectedChannels);
-    
-    ERFDir = sprintf('%spromAvg/ERF',figDir);
-    if ~exist(ERFDir,'dir')
-        mkdir(ERFDir)
-    end
-    
-    rd_saveAllFigs(fH1, figNames1, sessionDir, ERFDir, [])
-    close all
-end
-
-%% TF analyses
-
-if plotTF
-    [TF,fH2,figNames2] = meg_plotTF(D,p,selectedChannels);
-    
-    thresholdFigTFDir = sprintf('%spromAvg/TF',figDir);
-    if ~exist(thresholdFigTFDir,'dir')
-        mkdir(thresholdFigTFDir)
-    end
-    
-    rd_saveAllFigs(fH2, figNames2, sessionDir, thresholdFigTFDir, [])
-    if saveTF
-        save(sprintf('%s/TF.mat',matDir),'TF','-v7.3')  
-    end
-    close all
-end
-
-%% eyes closed alpha analyses 
-
-% [Alpha,fH3,figNames3] = meg_alpha(eyesClosedFileBI,sessionDir);
-% rd_saveAllFigs(fH3, figNames3, sessionDir, figDir, [])
-% save(sprintf('%s/Alpha.mat',matDir),'Alpha')
-
-%% Decoding orientation
-if plotDecode
-    analysisName = 'classAcc';
-    targetNames = {'T1','T2'};
-    classNames = {'V','H'};
-    twin = [-50 550];
-    
-    for iT = 1:2
-        targetTime = p.eventTimes(strcmp(p.eventNames,targetNames{iT}));
-        p.targetWindow = targetTime + twin;
-        classLabels = B.t1t2Axes(:,iT);
-        [A(iT), fH{iT}, figNames{iT}] = meg_plotDecode(D, I, p, classLabels, classNames);
+switch analType
+    case 'ERF'
+        %% ERF analyses
+        [fH1,figNames1] = meg_plotERF(D,p,selectedChannels);
         
-        if saveFigs
-            for iF = 1:numel(fH{iT})
-                figNamesT{iF} = sprintf('%s_%s', figNames{iT}{iF}, targetNames{iT});
-            end
-            rd_saveAllFigs(fH{iT}, figNamesT, [], figDir)
+        ERFDir = sprintf('%spromAvg/ERF',figDir);
+        if ~exist(ERFDir,'dir')
+            mkdir(ERFDir)
         end
-    end
-    
-    if saveAnalysis
-        decodeAnalStr = A(1).cueT1.decodingOps.analStr;
-        save(sprintf('%s/%s_%s_%sSlice_%s.mat', matDir, analysisName, analStr, sliceType, decodeAnalStr), 'A')
-    end
+        
+        rd_saveAllFigs(fH1, figNames1, sessionDir, ERFDir, [])
+        close all
+        
+    case 'TF'
+        %% TF analyses
+        [TF,fH2,figNames2] = meg_plotTF(D,p,selectedChannels);
+        
+        thresholdFigTFDir = sprintf('%spromAvg/TF',figDir);
+        if ~exist(thresholdFigTFDir,'dir')
+            mkdir(thresholdFigTFDir)
+        end
+        
+        rd_saveAllFigs(fH2, figNames2, sessionDir, thresholdFigTFDir, [])
+        if saveTF
+            save(sprintf('%s/TF.mat',matDir),'TF','-v7.3')
+        end
+        close all
+        
+    case 'alpha'
+        %% eyes closed alpha analyses
+        
+        % [Alpha,fH3,figNames3] = meg_alpha(eyesClosedFileBI,sessionDir);
+        % rd_saveAllFigs(fH3, figNames3, sessionDir, figDir, [])
+        % save(sprintf('%s/Alpha.mat',matDir),'Alpha')
+        
+    case 'decode'       
+        %% Decoding orientation
+        analysisName = 'classAcc';
+        targetNames = {'T1','T2'};
+        classNames = {'V','H'};
+        twin = [-50 550];
+        
+        for iT = 1:2
+            targetTime = p.eventTimes(strcmp(p.eventNames,targetNames{iT}));
+            p.targetWindow = targetTime + twin;
+            classLabels = B.t1t2Axes(:,iT);
+            [A(iT), fH{iT}, figNames{iT}] = meg_plotDecode(D, I, p, classLabels, classNames);
+            
+            if saveFigs
+                for iF = 1:numel(fH{iT})
+                    figNamesT{iF} = sprintf('%s_%s', figNames{iT}{iF}, targetNames{iT});
+                end
+                rd_saveAllFigs(fH{iT}, figNamesT, [], figDir)
+            end
+        end
+        
+        if saveAnalysis
+            decodeAnalStr = A(1).cueT1.decodingOps.analStr;
+            save(sprintf('%s/%s_%s_%sSlice_%s.mat', matDir, analysisName, analStr, sliceType, decodeAnalStr), 'A')
+        end
+        
+    otherwise
+        error('analType not recognized')
 end
 
 end
 
- 
