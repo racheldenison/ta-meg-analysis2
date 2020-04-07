@@ -91,7 +91,7 @@ getWeights = 1;
 
 nt = 5; % 5 % average this many trials together to improve SNR
 sp = 5; % 5 % sampling period
-nReps = 10;
+nReps = 10; % 10;
 kfold = 5;
 svmops = sprintf('-s 0 -t 0 -c 1 -v %d -q', kfold);
 svmopsNoCV = '-s 0 -t 0 -c 1 -q';
@@ -218,9 +218,9 @@ A.decodingOps.nReps = nReps;
 A.decodingOps.svmops = svmops;
 A.decodingOps.analStr = decodeAnalStr;
 A.classTimes = times;
-A.classAccNT = classAccNT;
-A.classModelNT = classModelNT;
-A.classWeightsNT = classWeightsNT;
+% A.classAccNT = classAccNT;
+% A.classModelNT = classModelNT;
+% A.classWeightsNT = classWeightsNT;
 A.classAcc = classAcc;
 A.classWeights = classWeights;
 

@@ -30,6 +30,8 @@ function [A, D, selectedChannels] = meg_runAnalysis(expt, sessionDir, user)
 if nargin == 0
     expt = 'TA2'; % TANoise
     sessionDir = 'R1187_20181119';
+%     expt = 'TANoise';
+%     sessionDir = 'R1187_20180105';
     user = 'mcq'; % 'mcq','karen','rachel'
 end
 if ~exist('user','var')
@@ -40,12 +42,13 @@ end
 analStr = 'bietfp';
 paramType = 'Analysis';
 analType = 'decode'; % 'ERF','TF','decode'
-sliceType = 'cue'; % 'all','cue'
+sliceType = 'all'; % 'all','cue'
+channelSelectionType = 'channels_peakprom';
 
 readData = 0; % need to read data first time
 loadData = 1; % reload data matrix
 selectChannels = 0;
-loadSelectedChannels = 0;
+loadSelectedChannels = 1;
 flipData = 0; % flip data direction
 
 %%% RD suggestion: switch between these options instead of toggling? so
@@ -57,7 +60,7 @@ saveTF = 0; % save time frequency mat
 plotDecode = 1;
 
 saveAnalysis = 1;
-saveFigs = 1;
+saveFigs = 0;
 
 %% setup
 % directories
@@ -138,10 +141,21 @@ else
 end
 
 if loadSelectedChannels
-    chFile = sprintf('%s/Pk_avgProm.mat',matDir);
-    load(chFile)
-    selectedChannels = Pk.passCh';
-    channelDir = Pk.promDir(selectedChannels); % positive or negative peak
+    %%% RD: can probably streamline/unify this more, perhaps move to
+    %%% separate function
+    switch channelSelectionType
+        case 'Pk_avgProm'
+            chFile = sprintf('%s/Pk_avgProm.mat',matDir);
+            load(chFile)
+            selectedChannels = Pk.passCh';
+            channelDir = Pk.promDir(selectedChannels); % positive or negative peak
+        case 'channels_peakprom'
+            chFile = sprintf('%s/channels_peakprom.mat',matDir);
+            load(chFile)
+            channelsRanked = C.channelsRanked;
+        otherwise
+            error('channelSelectionType not recognized')
+    end
 end
 
 %% data direction
@@ -196,6 +210,7 @@ end
 [D, I] = meg_slicer(data, cond, condNames, levelNames);
 % D.cueT2subcueT1 = D.cueT2-D.cueT1;
 
+%% run analysis
 switch analType
     case 'ERF'
         %% ERF analyses
@@ -237,24 +252,36 @@ switch analType
         targetNames = {'T1','T2'};
         classNames = {'V','H'};
         twin = [-50 550];
+        condNames = fields(D);
         
-        for iT = 1:2
-            targetTime = p.eventTimes(strcmp(p.eventNames,targetNames{iT}));
-            p.targetWindow = targetTime + twin;
-            classLabels = B.t1t2Axes(:,iT);
-            [A(iT), fH{iT}, figNames{iT}] = meg_plotDecode(D, I, p, classLabels, classNames);
+        allA = [];
+        nTopCh = [157 100 50 20 10];
+        for i = 1:numel(nTopCh)
             
-            if saveFigs
-                for iF = 1:numel(fH{iT})
-                    figNamesT{iF} = sprintf('%s_%s', figNames{iT}{iF}, targetNames{iT});
+            selectedChannels = channelsRanked(1:nTopCh(i));
+            
+%             A = struct([]);
+            for iT = 1:2
+                targetTime = p.eventTimes(strcmp(p.eventNames,targetNames{iT}));
+                p.targetWindow = targetTime + twin;
+                classLabels = B.t1t2Axes(:,iT);
+                [A(iT), fH{iT}, figNames{iT}] = meg_plotDecode(D, I, p, classLabels, classNames, selectedChannels);
+                
+                if saveFigs
+                    for iF = 1:numel(fH{iT})
+                        figNamesT{iF} = sprintf('%s_%s', figNames{iT}{iF}, targetNames{iT});
+                    end
+                    rd_saveAllFigs(fH{iT}, figNamesT, [], figDir)
                 end
-                rd_saveAllFigs(fH{iT}, figNamesT, [], figDir)
             end
+            
+            allA{i} = A;
         end
         
         if saveAnalysis
-            decodeAnalStr = A(1).cueT1.decodingOps.analStr;
-            save(sprintf('%s/%s_%s_%sSlice_%s.mat', matDir, analysisName, analStr, sliceType, decodeAnalStr), 'A')
+            decodeAnalStr = A(1).(condNames{1}).decodingOps.analStr;
+%             save(sprintf('%s/%s_%s_%sSlice_%s.mat', matDir, analysisName, analStr, sliceType, decodeAnalStr), 'A', 'targetNames')
+            save(sprintf('%s/%s_%s_%sSlice_%s_varyNChannels10-157.mat', matDir, analysisName, analStr, sliceType, decodeAnalStr), 'allA', 'targetNames', 'nTopCh')
         end
         
     otherwise

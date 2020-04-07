@@ -17,7 +17,6 @@ p.channelForSaturatingChannels = 168;
 
 switch expt    
     case 'TA2_Preproc'
-        % timing 
         p.eventTimes = [0 1050 1350 2300]; % accounting for 50ms photodiode delay
         p.eventNames = {'precue','T1','T2','response cue'};
         p.tstart = -200; % -1000; 
@@ -28,7 +27,6 @@ switch expt
         p.blankChannel = 167; 
         
     case 'TA2_Analysis'
-        % timing 
         p.eventTimes = [0 1050 1350 2300]; % accounting for 50ms photodiode delay
         p.eventNames = {'precue','T1','T2','response cue'};
         p.tstart = -500; 
@@ -41,8 +39,7 @@ switch expt
         p.colorAlpha = 0.75; % transparency for plots 
    
     case 'TANoise_Preproc'
-        % add timing
-        p.eventTimes = [0 1000 1250 2300];
+        p.eventTimes = [0 1050 1350 2300]; % accounting for 50ms photodiode delay
         p.eventNames = {'precue','T1','T2','response cue'};
         p.tstart = -200; 
         p.tstop = 2300; 
@@ -52,8 +49,8 @@ switch expt
         p.blankChannel = 167; 
         
     case 'TANoise_Analysis'
-        % add timing
-        p.eventTimes = [0 1000 1250 2300];
+        p.eventTimes = [0 1050 1350 2300]; % accounting for 50ms photodiode delay
+        p.eventNames = {'precue','T1','T2','response cue'};
         p.tstart = -500; 
         p.tstop = 3900; 
         p.prestim = 0.5; 

@@ -1,6 +1,6 @@
-function [A, fH, figNames] = meg_plotDecode(D, I, p, classLabels, classNames)
+function [A, fH, figNames] = meg_plotDecode(D, I, p, classLabels, classNames, selectedChannels)
 
-% function [A, fH, figNames] = meg_plotDecode(D, I, p, classLabels, classNames)
+% function [A, fH, figNames] = meg_plotDecode(D, I, p, classLabels, classNames, selectedChannels)
 %
 % ADD doc
 %
@@ -22,6 +22,9 @@ if nargin < 3
 end
 if nargin < 4 
     classNames = [];
+end
+if nargin < 5
+    selectedChannels = [];
 end
 
 %% Setup
@@ -55,12 +58,21 @@ for iC = 1:nCond
     data = D.(c);
     
     if isempty(I)
-        idx = 1:size(data,3);
+        trIdx = 1:size(data,3);
     else
-        idx = I.(c);
+        trIdx = I.(c);
+    end
+    
+    if isempty(selectedChannels)
+        chIdx = 1:size(data,2);
+    else
+        chIdx = sort(selectedChannels);
     end
 
-    A.(c) = meg_decode(data, classLabels(idx), classNames, p);
+    A.(c) = meg_decode(data(:,chIdx,:), classLabels(trIdx), classNames, p);
+    
+    A.(c).classLabels = classLabels(trIdx);
+    A.(c).selectedChannels = chIdx;
 end
 
 %% Unpack analysis structure
@@ -70,12 +82,15 @@ times = A.(c).classTimes;
 targetWindow = A.(c).targetWindow;
 decodeAnalStr = A.(c).decodingOps.analStr;
 
+nTime = numel(times);
+nCh = 157;
+
 classAcc = [];
-classWeights = [];
+classWeights = nan(nTime,nCh,nCond);
 for iC = 1:nCond
     c = condNames{iC};
     classAcc(:,iC) = A.(c).classAcc;
-    classWeights(:,:,iC) = A.(c).classWeights;
+    classWeights(:,chIdx,iC) = A.(c).classWeights;
 end
 
 %% Plot
@@ -106,7 +121,7 @@ if ~isempty(classWeights) && plotMovie
     clims = [-2 2];
     
     figure
-    for iTime = 1:numel(times)
+    for iTime = 1:nTime
         subplot(1,1,1)
         vals = mean(classWeights(iTime,:,:),3);
         ssm_plotOnMesh(vals, '', [], data_hdr, '2d');
@@ -122,7 +137,7 @@ end
 twins = {targetWindow};
 
 if ~isempty(classWeights)
-    clims = [0 0.1];
+    clims = [0 0.1]; % [0 0.1]
     
     for iTW = 1:numel(twins)
         twin = twins{iTW};
