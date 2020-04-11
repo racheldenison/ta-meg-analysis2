@@ -1,7 +1,7 @@
 % meg_plotGroupDecode.m
 
 %% setup
-expt = 'TA2';
+expt = 'TANoise';
 user = 'mcq';
 paramType = 'Analysis';
 
@@ -13,6 +13,7 @@ exptDir = meg_pathToTAMEG(expt, user);
 
 % sessions
 sessionNames = meg_sessions(expt);
+sessionNames = sessionNames([1:8 11:20])
 
 % params
 p = meg_params(sprintf('%s_%s', expt, paramType));
@@ -20,16 +21,20 @@ p = meg_params(sprintf('%s_%s', expt, paramType));
 %% gather As to make groupA
 if loadAnalysisFiles
     groupA = [];
-    for iS = 11:numel(sessionNames)
+    for iS = 1:numel(sessionNames)
         sessionDir = sessionNames{iS};
         disp(sessionDir)
         
         matDir = sprintf('%s/%s/mat', exptDir, sessionDir);
-        dataFile = dir(sprintf('%s/classAcc*varyNChannels*.mat', matDir));
+        dataFile = dir(sprintf('%s/classAcc*nCh50.mat', matDir));
         load(sprintf('%s/%s', matDir, dataFile.name))
         
-        for iR = 1:length(allA)
-            groupA{iS,iR} = allA{iR};
+        if exist('allA','var')
+            for iR = 1:length(allA)
+                groupA{iS,iR} = allA{iR};
+            end
+        else
+            groupA{iS,1} = A;
         end
     end
 end
@@ -38,8 +43,8 @@ end
 [nSessions, nRuns] = size(groupA);
 nT = numel(groupA{1});
 % condNames = {'cueT1','cueT2','neutral'};
-% condNames = {'cueT1','cueT2'};
-condNames = {'all'};
+condNames = {'cueT1','cueT2'};
+% condNames = {'all'};
 nCond = numel(condNames);
 A = groupA{1,1}(1).(condNames{1});
 t = A.classTimes - p.eventTimes(2);
@@ -59,10 +64,12 @@ end
 groupMean = mean(groupData,4);
 groupSte = std(groupData,0,4)./sqrt(nSessions);
 
-groupDiffData = squeeze(groupData(:,1,:,:) - groupData(:,2,:,:));
-groupDiffData(:,2,:) = -groupDiffData(:,2,:);
-groupDiffMean = mean(groupDiffData,3);
-groupDiffSte = std(groupDiffData,0,3)./sqrt(nSessions);
+if strcmp(condNames{1},'cueT1') && strcmp(condNames{2},'cueT2')
+    groupDiffData = squeeze(groupData(:,1,:,:) - groupData(:,2,:,:));
+    groupDiffData(:,2,:) = -groupDiffData(:,2,:);
+    groupDiffMean = mean(groupDiffData,3);
+    groupDiffSte = std(groupDiffData,0,3)./sqrt(nSessions);
+end
 
 %% plot conds
 figure
@@ -72,6 +79,7 @@ close(gcf)
 
 ylims = [45 65];
 figure('Position',[200 500 900 400])
+p1 = [];
 for iT = 1:nT
     subplot(1,nT,iT)
     hold on
@@ -214,4 +222,6 @@ for iM = 1:numel(measureNames)
     title(sprintf('%s, %s ch', m, runNames(runIdx,:)))
 end
 
-
+meanAve = squeeze(mean(mean(groupDataVals.mean,1),2))';
+maxAve = squeeze(mean(mean(groupDataVals.max,1),2))';
+disp([nTopCh; meanAve; maxAve])

@@ -59,12 +59,17 @@ end
 %% check inputs
 % check data
 if ~generateData
+    if isempty(data)
+        D = [];
+        I = [];
+        return;
+    end
     sz = size(data);
     if numel(sz)~=3
         error('data is expected to be 3-dimensional, with trials as the last dimension')
     end
 end
-    
+
 % check levelNames
 if numel(levelNames)~=numel(condNames)
     error('Must be equal number of condNames and levelNames')

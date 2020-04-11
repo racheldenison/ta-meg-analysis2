@@ -41,9 +41,9 @@ end
 %% settings
 analStr = 'bietfp';
 paramType = 'Analysis';
-analType = 'decode'; % 'ERF','TF','decode'
-sliceType = 'all'; % 'all','cue'
-channelSelectionType = 'channels_peakprom';
+analType = 'decode'; % 'ERF','TF','decode','channels'
+sliceType = 'cue'; % 'all','cue'
+channelSelectionType = '20Hz_ebi'; % 'peakprom','classweights','20Hz_ebi'
 
 readData = 0; % need to read data first time
 loadData = 1; % reload data matrix
@@ -54,13 +54,10 @@ flipData = 0; % flip data direction
 %%% RD suggestion: switch between these options instead of toggling? so
 %%% this function runs only one type of analysis at a time. Suggest
 %%% returning an analysis structure A from each plotting function
-plotERF = 0;
-plotTF = 0;
 saveTF = 0; % save time frequency mat
-plotDecode = 1;
 
 saveAnalysis = 1;
-saveFigs = 0;
+saveFigs = 1;
 
 %% setup
 % directories
@@ -114,6 +111,10 @@ if loadData
     load(dataFile, 'data')
 end
 
+if ~exist('data','var')
+    data = [];
+end
+
 %% reject trials
 data = meg_rejectTrials(data, dataDir); % NaN manually rejected trials
 
@@ -149,9 +150,13 @@ if loadSelectedChannels
             load(chFile)
             selectedChannels = Pk.passCh';
             channelDir = Pk.promDir(selectedChannels); % positive or negative peak
-        case 'channels_peakprom'
-            chFile = sprintf('%s/channels_peakprom.mat',matDir);
+        case {'peakprom','classweights'}
+            chFile = sprintf('%s/channels_%s.mat',matDir,channelSelectionType);
             load(chFile)
+            channelsRanked = C.channelsRanked;
+        case '20Hz_ebi'
+            chFile = sprintf('%s/channels_%s.mat',matDir,channelSelectionType);
+            C = load(chFile);
             channelsRanked = C.channelsRanked;
         otherwise
             error('channelSelectionType not recognized')
@@ -208,10 +213,22 @@ switch sliceType
 end
 
 [D, I] = meg_slicer(data, cond, condNames, levelNames);
-% D.cueT2subcueT1 = D.cueT2-D.cueT1;
 
 %% run analysis
 switch analType
+    case 'channels'
+        sortType = 'classweights';
+        
+        [C, fH, figNames] = meg_sortChannels(expt, sessionDir, user, sortType);
+        A = C;
+        
+        if saveFigs
+            rd_saveAllFigs(fH, figNames, [], figDir)
+        end
+        if saveAnalysis
+             save(sprintf('%s/channels_%s.mat', matDir, sortType), 'C')
+        end
+        
     case 'ERF'
         %% ERF analyses
         [fH1,figNames1] = meg_plotERF(D,p,selectedChannels);
@@ -222,7 +239,6 @@ switch analType
         end
         
         rd_saveAllFigs(fH1, figNames1, sessionDir, ERFDir, [])
-        close all
         
     case 'TF'
         %% TF analyses
@@ -237,7 +253,6 @@ switch analType
         if saveTF
             save(sprintf('%s/TF.mat',matDir),'TF','-v7.3')
         end
-        close all
         
     case 'alpha'
         %% eyes closed alpha analyses
@@ -254,9 +269,10 @@ switch analType
         twin = [-50 550];
         condNames = fields(D);
         
-        allA = [];
+%         allA = [];
         nTopCh = [157 100 50 20 10];
-        for i = 1:numel(nTopCh)
+        i = 3;
+%         for i = 1:numel(nTopCh)
             
             selectedChannels = channelsRanked(1:nTopCh(i));
             
@@ -275,13 +291,14 @@ switch analType
                 end
             end
             
-            allA{i} = A;
-        end
+%             allA{i} = A;
+%         end
         
         if saveAnalysis
             decodeAnalStr = A(1).(condNames{1}).decodingOps.analStr;
 %             save(sprintf('%s/%s_%s_%sSlice_%s.mat', matDir, analysisName, analStr, sliceType, decodeAnalStr), 'A', 'targetNames')
-            save(sprintf('%s/%s_%s_%sSlice_%s_varyNChannels10-157.mat', matDir, analysisName, analStr, sliceType, decodeAnalStr), 'allA', 'targetNames', 'nTopCh')
+%             save(sprintf('%s/%s_%s_%sSlice_%s_varyNChannels10-157_sortedBy20Hz.mat', matDir, analysisName, analStr, sliceType, decodeAnalStr), 'allA', 'targetNames', 'nTopCh')
+            save(sprintf('%s/%s_%s_%sSlice_%s_nCh%d.mat', matDir, analysisName, analStr, sliceType, decodeAnalStr, nTopCh(i)), 'A', 'targetNames')
         end
         
     otherwise

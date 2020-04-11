@@ -65,8 +65,10 @@ for iC = 1:nCond
     
     if isempty(selectedChannels)
         chIdx = 1:size(data,2);
+        chStr = '';
     else
         chIdx = sort(selectedChannels);
+        chStr = sprintf('_nCh%d', numel(chIdx));
     end
 
     A.(c) = meg_decode(data(:,chIdx,:), classLabels(trIdx), classNames, p);
@@ -113,7 +115,7 @@ ylabel('Classification accuracy (%)')
 legend(condNames)
 title(decodeTitle)
 
-figNames{1} = sprintf('plot_%s_%s', 'classAcc', decodeAnalStr);
+figNames{1} = sprintf('plot_classAcc_%s%s', decodeAnalStr, chStr);
 
 %% topo weights movie T1 and T2
 plotMovie = 0;
@@ -137,7 +139,7 @@ end
 twins = {targetWindow};
 
 if ~isempty(classWeights)
-    clims = [0 0.1]; % [0 0.1]
+    clims = [0 0.35]; % [0 0.1]
     
     for iTW = 1:numel(twins)
         twin = twins{iTW};
@@ -152,7 +154,7 @@ if ~isempty(classWeights)
         colorbar
         rd_supertitle2(sprintf('%s, %d-%d ms', decodeTitle, times(tidx1), times(tidx2)))
         
-        figNames{end+1} = sprintf('map_svmWeights_%s_%d-%dms', decodeAnalStr, times(tidx1), times(tidx2));
+        figNames{end+1} = sprintf('map_svmWeights_%s%s_%d-%dms', decodeAnalStr, chStr, times(tidx1), times(tidx2));
     end
 end
 

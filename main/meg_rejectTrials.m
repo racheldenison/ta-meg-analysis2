@@ -12,8 +12,12 @@ function data = meg_rejectTrials(data, dataDir)
 % Karen Tian
 % January 2020
 
-%% NaN manually rejected channels 
+%% check inputs
+if isempty(data)
+    return
+end
 
+%% NaN manually rejected channels 
 try
     load(sprintf('%s/mat/trials_rejected.mat', dataDir), 'trials_rejected'); 
 catch

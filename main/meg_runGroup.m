@@ -2,7 +2,7 @@
 
 %% setup
 user = 'mcq'; % 'mcq','karen','rachel'
-expt = 'TA2';
+expt = 'TANoise';
 
 %% get session names
 allSessions = meg_sessions(expt);
@@ -96,7 +96,7 @@ sessionNames = {'R0817_20171212', 'R0817_20171213',...
 makeGroup = 0; 
  
 groupA = [];
-for i=1:numel(sessionNames)
+for i=1:numel(sessionNames) 
     sessionDir = sessionNames{i}; 
     disp(sessionDir)
 
