@@ -1,4 +1,4 @@
-% meg_plotGroupDecode.m
+% meg_plotDecodeGroup.m
 
 %% setup
 expt = 'TANoise';
