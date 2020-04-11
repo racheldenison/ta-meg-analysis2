@@ -48,7 +48,7 @@ channelSelectionType = '20Hz_ebi'; % 'peakprom','classweights','20Hz_ebi'
 readData = 0; % need to read data first time
 loadData = 1; % reload data matrix
 selectChannels = 0;
-loadSelectedChannels = 1;
+loadChannels = 1;
 flipData = 0; % flip data direction
 
 %%% RD suggestion: switch between these options instead of toggling? so
@@ -118,7 +118,21 @@ end
 %% reject trials
 data = meg_rejectTrials(data, dataDir); % NaN manually rejected trials
 
-%% threshold channel selector
+%% channel selection
+%%% RD: Reorganizing this section a bit. Let's load sorted channels
+%%% (channelsRanked) and then pick some number of top channels from that
+%%% list. Channel sorting (making channelsRanked) is now an analysis type
+%%% called "channels" in the run analysis section
+
+if loadChannels
+    channelsRanked = meg_loadChannels(matDir, channelSelectionType);
+end
+
+%%% RD: Update this part to select nTopChannels. Suggest moving parts of
+%%% meg_selectChannels to the new function meg_sortChannels. The current
+%%% function meg_selectChannels may become unnecessary, if channel
+%%% selection is simply taking the top n channels from the sorted list.
+
 % if selectChannels
 %     meg_selectChannels(sessionDir,data);
 % elseif loadSelectedChannels
@@ -141,28 +155,6 @@ else
     selectedChannels = [];
 end
 
-if loadSelectedChannels
-    %%% RD: can probably streamline/unify this more, perhaps move to
-    %%% separate function
-    switch channelSelectionType
-        case 'Pk_avgProm'
-            chFile = sprintf('%s/Pk_avgProm.mat',matDir);
-            load(chFile)
-            selectedChannels = Pk.passCh';
-            channelDir = Pk.promDir(selectedChannels); % positive or negative peak
-        case {'peakprom','classweights'}
-            chFile = sprintf('%s/channels_%s.mat',matDir,channelSelectionType);
-            load(chFile)
-            channelsRanked = C.channelsRanked;
-        case '20Hz_ebi'
-            chFile = sprintf('%s/channels_%s.mat',matDir,channelSelectionType);
-            C = load(chFile);
-            channelsRanked = C.channelsRanked;
-        otherwise
-            error('channelSelectionType not recognized')
-    end
-end
-
 %% data direction
 % flip based on peak prominence direction
 if flipData
@@ -170,6 +162,8 @@ if flipData
 end
 
 %% peak channel selector
+%%% RD: incorporate all channel selection options into meg_sortChannels.m
+%%% and meg_loadChannels.m
 
 % try peak channels
 % [fHpeak,figNamesPk] = meg_selectChannels(sessionDir, data);
