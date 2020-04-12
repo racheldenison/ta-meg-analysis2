@@ -12,6 +12,8 @@ switch user
         root = '/Volumes/purplab2/EXPERIMENTS/1_Current_Experiments/Rachel/TA_MEG/MEG';
     case 'karen'
         root = '/Users/kantian/Dropbox/Data';
+    case 'karenhd'
+        root = 'Volumes/kantian/Dropbox/Data'; 
     case 'rachel'
         root = '/Volumes/Rachel NYU/Backup_mcq_20200321/TA_MEG/MEG';
     otherwise

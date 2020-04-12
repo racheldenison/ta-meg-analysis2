@@ -32,7 +32,7 @@ if nargin == 0
     sessionDir = 'R1187_20181119';
 %     expt = 'TANoise';
 %     sessionDir = 'R1187_20180105';
-    user = 'mcq'; % 'mcq','karen','rachel'
+    user = 'mcq'; % 'mcq','karen','rachel','karenhd'
 end
 if ~exist('user','var')
     user = [];
@@ -44,6 +44,7 @@ paramType = 'Analysis';
 analType = 'decode'; % 'ERF','TF','decode','channels'
 sliceType = 'cue'; % 'all','cue'
 channelSelectionType = '20Hz_ebi'; % 'peakprom','classweights','20Hz_ebi'
+nChannelsSelected = 5; % number of channels to select from channelsRanked
 
 readData = 0; % need to read data first time
 loadData = 1; % reload data matrix
@@ -128,30 +129,33 @@ if loadChannels
     channelsRanked = meg_loadChannels(matDir, channelSelectionType); 
 end
 
+selectedChannels = channelsRanked(1:nChannelsSelected); 
+disp(sprintf('ch: %d   ',selectedChannels))
+
 %%% RD: Update this part to select nTopChannels. Suggest moving parts of
 %%% meg_selectChannels to the new function meg_sortChannels. The current
 %%% function meg_selectChannels may become unnecessary, if channel
 %%% selection is simply taking the top n channels from the sorted list.
 
-if selectChannels
-    figPromAvg = sprintf('%spromAvg',figDir);
-    if ~exist(figPromAvg,'dir')
-        mkdir(figPromAvg)
-    end
-    [pkfH, pkfigNames, Pk] = kt_peakstest(sessionDir,data);
-    rd_saveAllFigs(pkfH, pkfigNames, sessionDir, figPromAvg, [])
-    save(sprintf('%s/Pk_avgProm.mat',matDir),'Pk')
-    
-    close all
-    selectedChannels = Pk.passCh';
-else
-    selectedChannels = [];
-end
+% if selectChannels
+%     figPromAvg = sprintf('%spromAvg',figDir);
+%     if ~exist(figPromAvg,'dir')
+%         mkdir(figPromAvg)
+%     end
+%     [pkfH, pkfigNames, Pk] = kt_peakstest(sessionDir,data);
+%     rd_saveAllFigs(pkfH, pkfigNames, sessionDir, figPromAvg, [])
+%     save(sprintf('%s/Pk_avgProm.mat',matDir),'Pk')
+%     
+%     close all
+%     selectedChannels = Pk.passCh';
+% else
+%     selectedChannels = [];
+% end
 
 %% data direction
 % flip based on peak prominence direction
 if flipData
-    data = data.*Pk.promDir';
+    data = data.*C.promDir';
 end
 
 %% slice data by condition (here cue condition)

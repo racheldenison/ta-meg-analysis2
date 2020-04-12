@@ -25,8 +25,10 @@ switch channelSelectionType
         %%% update to give channelsRanked and C outputs
         chFile = sprintf('%s/Pk_avgProm.mat',matDir);
         load(chFile)
-        selectedChannels = Pk.passCh';
-        channelDir = Pk.promDir(selectedChannels); % positive or negative peak
+        C = Pk; 
+        channelsRanked = C.idxDirProm; 
+        % selectedChannels = Pk.passCh';
+        % channelDir = Pk.promDir(selectedChannels); % positive or negative peak
     case {'peakprom','classweights'}
         chFile = sprintf('%s/channels_%s.mat',matDir,channelSelectionType);
         load(chFile)
