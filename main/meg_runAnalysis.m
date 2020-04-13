@@ -32,7 +32,7 @@ if nargin == 0
     sessionDir = 'R1187_20181119';
 %     expt = 'TANoise';
 %     sessionDir = 'R1187_20180105';
-    user = 'mcq'; % 'mcq','karen','rachel'
+    user = 'mcq'; % 'mcq','karen','rachel','karenhd'
 end
 if ~exist('user','var')
     user = [];
@@ -44,6 +44,7 @@ paramType = 'Analysis';
 analType = 'none'; % 'none','ERF','TF','decode','channels'
 sliceType = 'all'; % 'all','cue'
 channelSelectionType = '20Hz_ebi'; % 'peakprom','classweights','20Hz_ebi'
+nChannelsSelected = 5; % number of channels to select from channelsRanked
 
 readData = 0; % need to read data first time
 loadData = 1; % reload data matrix
@@ -125,8 +126,11 @@ data = meg_rejectTrials(data, dataDir); % NaN manually rejected trials
 %%% called "channels" in the run analysis section
 
 if loadChannels
-    channelsRanked = meg_loadChannels(matDir, channelSelectionType);
+    channelsRanked = meg_loadChannels(matDir, channelSelectionType); 
 end
+
+selectedChannels = channelsRanked(1:nChannelsSelected); 
+disp(sprintf('ch: %d   ',selectedChannels))
 
 %%% RD: Update this part to select nTopChannels. Suggest moving parts of
 %%% meg_selectChannels to the new function meg_sortChannels. The current
@@ -134,55 +138,25 @@ end
 %%% selection is simply taking the top n channels from the sorted list.
 
 % if selectChannels
-%     meg_selectChannels(sessionDir,data);
-% elseif loadSelectedChannels
-%     load(sprintf('%s/T.mat',matDir),'T');
-%     selectedChannels = T.passCh;
+%     figPromAvg = sprintf('%spromAvg',figDir);
+%     if ~exist(figPromAvg,'dir')
+%         mkdir(figPromAvg)
+%     end
+%     [pkfH, pkfigNames, Pk] = kt_peakstest(sessionDir,data);
+%     rd_saveAllFigs(pkfH, pkfigNames, sessionDir, figPromAvg, [])
+%     save(sprintf('%s/Pk_avgProm.mat',matDir),'Pk')
+%     
+%     close all
+%     selectedChannels = Pk.passCh';
+% else
+%     selectedChannels = [];
 % end
-
-if selectChannels
-    figPromAvg = sprintf('%spromAvg',figDir);
-    if ~exist(figPromAvg,'dir')
-        mkdir(figPromAvg)
-    end
-    [pkfH, pkfigNames, Pk] = kt_peakstest(sessionDir,data);
-    rd_saveAllFigs(pkfH, pkfigNames, sessionDir, figPromAvg, [])
-    save(sprintf('%s/Pk_avgProm.mat',matDir),'Pk')
-    
-    close all
-    selectedChannels = Pk.passCh';
-else
-    selectedChannels = [];
-end
 
 %% data direction
 % flip based on peak prominence direction
 if flipData
-    data = data.*Pk.promDir';
+    data = data.*C.promDir';
 end
-
-%% peak channel selector
-%%% RD: incorporate all channel selection options into meg_sortChannels.m
-%%% and meg_loadChannels.m
-
-% try peak channels
-% [fHpeak,figNamesPk] = meg_selectChannels(sessionDir, data);
-% figDirPeak = sprintf('%speak',figDir);
-% if ~exist(figDirPeak,'dir')
-%     mkdir(figDirPeak)
-% end
-% rd_saveAllFigs(fHpeak, figNamesPk, sessionDir, figDirPeak, [])
-% close all
-
-%% try alpha channel selector
-% C = meg_selectChannels(sessionDir);
-
-% selectedChannels = C.chSortAlpha(1:5)';
-
-% figDirAlpha = sprintf('%sAlphaTop5',figDir);
-% if ~exist(figDirAlpha,'dir')
-%     mkdir(figDirAlpha)
-% end
 
 %% slice data by condition (here cue condition)
 switch sliceType
@@ -240,7 +214,7 @@ switch analType
         
     case 'TF'
         %% TF analyses
-        [TF,fH2,figNames2] = meg_plotTF(D,p,selectedChannels);
+        [A,fH2,figNames2] = meg_plotTF(D,p,selectedChannels);
         
         thresholdFigTFDir = sprintf('%spromAvg/TF',figDir);
         if ~exist(thresholdFigTFDir,'dir')
@@ -249,15 +223,15 @@ switch analType
         
         rd_saveAllFigs(fH2, figNames2, sessionDir, thresholdFigTFDir, [])
         if saveTF
-            save(sprintf('%s/TF.mat',matDir),'TF','-v7.3')
+            save(sprintf('%s/TF.mat',matDir),'A','-v7.3')
         end
         
     case 'alpha'
         %% eyes closed alpha analyses
         
-        % [Alpha,fH3,figNames3] = meg_alpha(eyesClosedFileBI,sessionDir);
-        % rd_saveAllFigs(fH3, figNames3, sessionDir, figDir, [])
-        % save(sprintf('%s/Alpha.mat',matDir),'Alpha')
+        [A,fH3,figNames3] = meg_alpha(eyesClosedFileBI,sessionDir);
+        rd_saveAllFigs(fH3, figNames3, sessionDir, figDir, [])
+        save(sprintf('%s/Alpha.mat',matDir),'A')
         
     case 'decode'       
         %% Decoding orientation

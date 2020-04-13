@@ -7,7 +7,7 @@ if nargin == 0
     expt = 'TA2';
     sessionDir = 'R1187_20181119';
     user = 'mcq'; 
-    sortType = 'classweights';
+    sortType = 'classweights'; % alpha, threshold
 end
 
 % directories
@@ -53,6 +53,8 @@ switch sortType
         C.absClassWeight = absClassWeight;
         C.weightsSorted = weightsSorted;
         C.channelsRanked = channelsRanked;
+        
+    case 'alpha'
         
     otherwise
         error('sortType not recognized')
