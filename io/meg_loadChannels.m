@@ -3,18 +3,20 @@ function [channelsRanked, C] = meg_loadChannels(matDir, channelSelectionType)
 % function [channelsRanked, C] = meg_loadChannels(matDir, channelSelectionType)
 %
 % INPUTS
+% matDir
+%   string, full path to mat directory
 %
-%   matDir - full path to mat directory
-%
-%   channelSelectionType - method used to sort the channels, corresponds to
-%   an existing file name, "channels_[type name]", e.g. "channels_peakprom"
-%       availabble: "peakprom", "classweights", "20Hz_ebi"
+% channelSelectionType
+%   method used to sort the channels, corresponds to an existing file name, 
+%   'channels_[type name]', e.g. 'channels_peakprom'
+%   availabble: 'peakprom', 'classweights', '20Hz_ebi'
 %
 % OUTPUTS
+% channelsRanked 
+%   vector, channel numbers rank ordered by the sorting metric
 %
-%   channelsRanked - channel numbers rank ordered by the sorting metric
-%
-%   C - channel structure returned by channel sorting function. see
+% C
+%   channel structure returned by channel sorting function. see
 %   meg_sortChannels.m
 %
 %

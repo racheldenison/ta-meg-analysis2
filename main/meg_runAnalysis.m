@@ -1,6 +1,6 @@
-function [A, D, selectedChannels] = meg_runAnalysis(expt, sessionDir, user)
+function [A, D, selectedChannels, I, B] = meg_runAnalysis(expt, sessionDir, user)
 
-% function [A, D, selectedChannels] = meg_runAnalysis(exptName, sessionDir, [user])
+% function [A, D, selectedChannels, I, B] = meg_runAnalysis(exptName, sessionDir, [user])
 %
 % INPUTS
 % exptName
@@ -41,14 +41,14 @@ end
 %% settings
 analStr = 'bietfp';
 paramType = 'Analysis';
-analType = 'decode'; % 'ERF','TF','decode','channels'
-sliceType = 'cue'; % 'all','cue'
+analType = 'none'; % 'none','ERF','TF','decode','channels'
+sliceType = 'all'; % 'all','cue'
 channelSelectionType = '20Hz_ebi'; % 'peakprom','classweights','20Hz_ebi'
 
 readData = 0; % need to read data first time
 loadData = 1; % reload data matrix
 selectChannels = 0;
-loadChannels = 1;
+loadChannels = 0;
 flipData = 0; % flip data direction
 
 %%% RD suggestion: switch between these options instead of toggling? so
@@ -56,8 +56,8 @@ flipData = 0; % flip data direction
 %%% returning an analysis structure A from each plotting function
 saveTF = 0; % save time frequency mat
 
-saveAnalysis = 1;
-saveFigs = 1;
+saveAnalysis = 0;
+saveFigs = 0;
 
 %% setup
 % directories
@@ -210,6 +210,10 @@ end
 
 %% run analysis
 switch analType
+    case 'none'
+        % just return sliced data or selected channels
+        A = [];
+        
     case 'channels'
         sortType = 'classweights';
         
