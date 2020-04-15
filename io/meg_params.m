@@ -57,6 +57,8 @@ switch expt
         p.poststim = 3.9; 
         p.precueChannel = 168; 
         p.blankChannel = 167; 
+        p.cueColors = [122/255 142/255 194/255; 225/255 124/255 96/255; 128/255 128/255 128/255; 157/255 135/255 212/255];  % cueT1, cueT2, neutral, difference
+        p.colorAlpha = 0.75; % transparency for plots 
         
     case 'Cupcake'
         p.tstart = -1000; 
