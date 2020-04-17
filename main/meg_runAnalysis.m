@@ -1,6 +1,6 @@
-function [A, D, selectedChannels] = meg_runAnalysis(expt, sessionDir, user)
+function [A, D, selectedChannels, I, B] = meg_runAnalysis(expt, sessionDir, user)
 
-% function [A, D, selectedChannels] = meg_runAnalysis(exptName, sessionDir, [user])
+% function [A, D, selectedChannels, I, B] = meg_runAnalysis(exptName, sessionDir, [user])
 %
 % INPUTS
 % exptName
@@ -13,6 +13,7 @@ function [A, D, selectedChannels] = meg_runAnalysis(expt, sessionDir, user)
 %   string giving the user name to determine path to data. defaults to
 %   'mcq' = get the data from the mcq server
 %
+% %%% RD: Update documentation about what this function can do
 % setup
 % read data
 % reject trials
@@ -38,29 +39,28 @@ if ~exist('user','var')
     user = [];
 end
 
-%% settings
+%% Settings
+% analysis options
 analStr = 'bietfp';
 paramType = 'Analysis';
-analType = 'decode'; % 'ERF','TF','decode','channels'
-sliceType = 'cue'; % 'all','cue'
+analType = 'none'; % 'none','readdata','sortchannels','ERF','TF','decode'
+sliceType = 'all'; % 'all','cue'
+
+% data
+loadData = 1; 
+
+% channels
+loadChannels = 0;
 channelSelectionType = '20Hz_ebi'; % 'peakprom','classweights','20Hz_ebi'
+
+selectChannels = 0;
 nChannelsSelected = 5; % number of channels to select from channelsRanked
 
-readData = 0; % need to read data first time
-loadData = 1; % reload data matrix
-selectChannels = 0;
-loadChannels = 1;
-flipData = 0; % flip data direction
+% saving
+saveAnalysis = 0;
+saveFigs = 0;
 
-%%% RD suggestion: switch between these options instead of toggling? so
-%%% this function runs only one type of analysis at a time. Suggest
-%%% returning an analysis structure A from each plotting function
-saveTF = 0; % save time frequency mat
-
-saveAnalysis = 1;
-saveFigs = 1;
-
-%% setup
+%% Setup
 % directories
 exptDir = meg_pathToTAMEG(expt, user);
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
@@ -76,10 +76,6 @@ sqdFile = sprintf('%s/%s_%s.sqd', preprocDir, fileBase, analStr); % *run file*
 dataFile = sprintf('%s/%s_%s_data.mat', matDir, fileBase, analStr);
 behavFile = dir(sprintf('%s/*.mat', behavDir));
 
-% eyesClosedBase = sessionDirToFileBase(sessionDir, 'EyesClosed');
-% eyesClosedFile = sprintf('%s/%s.sqd', dataDir, eyesClosedBase);
-% eyesClosedFileBI = sprintf('%s/%s_bi.sqd', dataDir, eyesClosedBase);
-
 % params
 p = meg_params(sprintf('%s_%s', expt, paramType));
 
@@ -87,8 +83,7 @@ p = meg_params(sprintf('%s_%s', expt, paramType));
 behav = load(sprintf('%s/%s', behavDir, behavFile.name));
 B = meg_behavior(behav);
 
-%% make directories
-
+%% Make directories
 if ~exist(figDir,'dir')
     mkdir(figDir)
 end
@@ -99,66 +94,29 @@ if ~exist(prepDir,'dir')
     mkdir(prepDir)
 end
 
-%% read data
-% read preprocessed sqd, prepare save to prep_data and data matrix
-if readData
-    [prep_data, data] = meg_getData(sqdFile,p); % time x channels x trials
-    save (dataFile, 'data', '-v7.3')
-    save (sprintf('%s/%s_%s_prep_data.mat',prepDir,fileBase,analStr),'prep_data', '-v7.3')
-end
-
-% if data already saved, then load data
+%% Load data
 if loadData
     load(dataFile, 'data')
-end
-
-if ~exist('data','var')
+else
     data = [];
 end
 
-%% reject trials
+%% Reject trials
 data = meg_rejectTrials(data, dataDir); % NaN manually rejected trials
 
-%% channel selection
-%%% RD: Reorganizing this section a bit. Let's load sorted channels
-%%% (channelsRanked) and then pick some number of top channels from that
-%%% list. Channel sorting (making channelsRanked) is now an analysis type
-%%% called "channels" in the run analysis section
-
+%% Channel selection
 if loadChannels
     channelsRanked = meg_loadChannels(matDir, channelSelectionType); 
 end
 
-selectedChannels = channelsRanked(1:nChannelsSelected); 
-disp(sprintf('ch: %d   ',selectedChannels))
-
-%%% RD: Update this part to select nTopChannels. Suggest moving parts of
-%%% meg_selectChannels to the new function meg_sortChannels. The current
-%%% function meg_selectChannels may become unnecessary, if channel
-%%% selection is simply taking the top n channels from the sorted list.
-
-% if selectChannels
-%     figPromAvg = sprintf('%spromAvg',figDir);
-%     if ~exist(figPromAvg,'dir')
-%         mkdir(figPromAvg)
-%     end
-%     [pkfH, pkfigNames, Pk] = kt_peakstest(sessionDir,data);
-%     rd_saveAllFigs(pkfH, pkfigNames, sessionDir, figPromAvg, [])
-%     save(sprintf('%s/Pk_avgProm.mat',matDir),'Pk')
-%     
-%     close all
-%     selectedChannels = Pk.passCh';
-% else
-%     selectedChannels = [];
-% end
-
-%% data direction
-% flip based on peak prominence direction
-if flipData
-    data = data.*C.promDir';
+if selectChannels
+    selectedChannels = channelsRanked(1:nChannelsSelected);
+    disp(sprintf('ch: %d   ',selectedChannels))
+else
+    selectedChannels = [];
 end
 
-%% slice data by condition (here cue condition)
+%% Slice data by condition (here cue condition)
 switch sliceType
     case 'all'
         cond = B.targetPresent;
@@ -182,9 +140,21 @@ end
 
 [D, I] = meg_slicer(data, cond, condNames, levelNames);
 
-%% run analysis
+%% Run analysis
 switch analType
-    case 'channels'
+    case 'none'
+        % just return sliced data or selected channels
+        A = [];
+        
+    case 'readdata'
+        %% Read preprocessed sqd
+        [prep_data, data] = meg_getData(sqdFile,p); % time x channels x trials
+        save (dataFile, 'data', '-v7.3')
+        save (sprintf('%s/%s_%s_prep_data.mat',prepDir,fileBase,analStr),'prep_data', '-v7.3')
+        
+    case 'sortchannels'
+        %% Sort channels
+        %%% RD: Update meg_sortChannels
         sortType = 'classweights';
         
         [C, fH, figNames] = meg_sortChannels(expt, sessionDir, user, sortType);
@@ -199,35 +169,45 @@ switch analType
         
     case 'ERF'
         %% ERF analyses
-        [fH1,figNames1] = meg_plotERF(D,p,selectedChannels);
+        [A,fH,figNames] = meg_plotERF(D,p,selectedChannels);
         
         ERFDir = sprintf('%spromAvg/ERF',figDir);
         if ~exist(ERFDir,'dir')
             mkdir(ERFDir)
         end
         
-        rd_saveAllFigs(fH1, figNames1, sessionDir, ERFDir, [])
+        if saveFigs
+            rd_saveAllFigs(fH, figNames, sessionDir, ERFDir, [])
+        end
         
     case 'TF'
         %% TF analyses
-        [A,fH2,figNames2] = meg_plotTF(D,p,selectedChannels);
+        [A,fH,figNames] = meg_plotTF(D,p,selectedChannels);
         
         thresholdFigTFDir = sprintf('%spromAvg/TF',figDir);
         if ~exist(thresholdFigTFDir,'dir')
             mkdir(thresholdFigTFDir)
         end
         
-        rd_saveAllFigs(fH2, figNames2, sessionDir, thresholdFigTFDir, [])
-        if saveTF
+        if saveFigs
+            rd_saveAllFigs(fH, figNames, sessionDir, thresholdFigTFDir, [])
+        end
+        if saveAnalysis
             save(sprintf('%s/TF.mat',matDir),'A','-v7.3')
         end
         
     case 'alpha'
-        %% eyes closed alpha analyses
+        %% Eyes closed alpha analyses
+        %%% RD: adjust inputs, rename to meg_plotAlpha? revisit this
+        %%% function
+        [A,fH,figNames] = meg_alpha(eyesClosedFileBI,sessionDir);
         
-        [A,fH3,figNames3] = meg_alpha(eyesClosedFileBI,sessionDir);
-        rd_saveAllFigs(fH3, figNames3, sessionDir, figDir, [])
-        save(sprintf('%s/Alpha.mat',matDir),'A')
+        if saveFigs
+            rd_saveAllFigs(fH, figNames, sessionDir, figDir, [])
+        end
+        if saveAnalysis
+            save(sprintf('%s/Alpha.mat',matDir),'A')
+        end
         
     case 'decode'       
         %% Decoding orientation

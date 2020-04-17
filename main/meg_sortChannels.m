@@ -21,8 +21,13 @@ p = meg_params(sprintf('%s_%s', expt, paramType));
 load vis/data_hdr.mat
 
 %% sort channels
+%%% RD: Add Karen's other sortTypes here from meg_selectChannels
+% make rank-ordered list of channels, channelsRanked
 switch sortType
+    case 'peakprom'
+        
     case 'classweights'
+        %%% RD: Make separate function
         twin = [0 400];
         
         matDir = sprintf('%s/%s/mat', exptDir, sessionDir);
