@@ -15,6 +15,13 @@ p.fSample = 1000; % frame rate, Hz
 p.megChannels = 1:157; % 
 p.channelForSaturatingChannels = 168;
 
+% plot colors
+p.cueColors = [122/255 142/255 194/255;  % cueT1 blue
+    225/255 124/255 96/255; % cueT2 red
+    128/255 128/255 128/255; % cueNeutral grey
+    157/255 135/255 212/255]; % difference purple
+p.colorAlpha = 0.75; % transparency
+
 switch expt    
     case 'TA2_Preproc'
         p.eventTimes = [0 1050 1350 2300]; % accounting for 50ms photodiode delay
@@ -57,8 +64,6 @@ switch expt
         p.poststim = 3.9; 
         p.precueChannel = 168; 
         p.blankChannel = 167; 
-        p.cueColors = [122/255 142/255 194/255; 225/255 124/255 96/255; 128/255 128/255 128/255; 157/255 135/255 212/255];  % cueT1, cueT2, neutral, difference
-        p.colorAlpha = 0.75; % transparency for plots 
         
     case 'Cupcake'
         p.tstart = -1000; 
