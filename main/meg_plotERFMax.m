@@ -4,6 +4,9 @@ function meg_plotERFMax
 % averages and plots 
 % April 2020 
 
+% mega group D 
+load('/Users/kantian/Dropbox/Data/TA2/MEG/Group/mat/groupD.mat') 
+
 load('/Users/kantian/Dropbox/github/ta-meg-analysis2/groupDataMat/TA2/D.mat')
 
 % load('/Users/kantian/Dropbox/Data/TA2/MEG/Group/mat/subjectD2.mat')
