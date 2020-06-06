@@ -1,3 +1,4 @@
+function meg_runPreproc(sessionDir)
 % meg_runMEGPreproc.m
 
 %% setup
@@ -5,12 +6,12 @@
 % exptDir = '/Local/Users/denison/Data/TANoise/MEG';
 % exptDir = '/Local/Users/denison/Data/TA2/MEG';
 % exptDir = pathToTA2('MEG');
-exptDir = '/Users/kantian/Dropbox/Data/TA2/MEG';
-% exptDir = '/Users/kantian/Dropbox/Data/TANoise/MEG';
+% exptDir = '/Users/kantian/Dropbox/Data/TA2/MEG';
+exptDir = '/Users/kantian/Dropbox/Data/TANoise/MEG';
 % exptDir = pathToTANoise('MEG');
 
-sessionDir = 'R1452_20190711';
-fileBase = sessionDirToFileBase(sessionDir,'TA2'); 
+% sessionDir = 'R0817_20171213';
+fileBase = sessionDirToFileBase(sessionDir,'TANoise'); 
 % fileBase = 'R0890_TA2_11.21.18';
 
 % sessionDir = 'R0817_20171213';
@@ -21,8 +22,10 @@ runsToRename = 1:12; %runs
 
 segmentDataFile = false;
 
+preprocStr = 'ebi'; % 'biet_f1Hz_p'; % desired analyses % bie 
+
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
-preprocDir = sprintf('%s/preproc', dataDir);
+preprocDir = sprintf('%s/preproc_%s', dataDir, preprocStr);
 figDir = sprintf('%s/%s/%s', preprocDir, 'figures');
 
 inspectData = false;
@@ -116,6 +119,8 @@ rd_checkTriggers(outfile);
 %% move original run files back to the session directory
 for iRun = 1:nRuns
     movefile(sprintf('%s/%s', preprocDir, runFiles(iRun).name), dataDir)
+end
+
 end
 
 

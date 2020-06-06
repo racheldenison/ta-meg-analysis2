@@ -25,25 +25,25 @@ end
 
 %%  preproc options
 
-exptShortName = 'Cupcake'; % TA2_Preproc, TANoise_Preproc, Cupcake
+exptShortName = 'TANoise_Preproc'; % TA2_Preproc, TANoise_Preproc, Cupcake
 p = meg_params(exptShortName); 
 
 removeBadChannels = 1; % b dead and outlier sd channels 
 interpolate = 1; % i 
 
 environmentalDenoise = 1; % e
-TSPCA = 1; % t 
+TSPCA = 0; % t 
 
-hpfilter = 1; % f 
-components = 1; % c, pca/ica
+hpfilter = 0; % f 
+components = 0; % c, pca/ica
 
-rejectPC = 1; % auto reject 1st pc?
+rejectPC = 0; % auto reject 1st pc?
 rejectIC = 0; % auto reject ic?
 
 %%
 % high pass filter options
 Fsample = 1000;
-Fhp = 0.1; % high pass frequency
+Fhp = 0.1; % 1, 0.1 high pass frequency
 N = []; %16500; % 8250 % filter order, auto calculate if unspecified 
 type = 'firws';
 direc = 'onepass-zerophase';
@@ -100,6 +100,53 @@ if plotFigs
     xlabel('time (s)')
 end
 
+%% Denoise using reference channels (new meg-utils)
+if environmentalDenoise 
+    % See also LSdenoise.m
+    analStr = [analStr 'e'];
+    
+    opts = [];
+    opts.ref = refChannels+1;
+    opts.meg = megChannels+1;
+    
+    % convert to time x trials x channels
+    data = permute(data,[1 3 2]);
+    data = meg_environmentalDenoising(data, opts);
+    data = permute(data,[1 3 2]); % convert back
+    
+    if plotFigs
+        figure
+        hold on
+        subplot 211
+        plot(dataOriginal(:,megChannels+1))
+        title('unprocessed')
+        subplot 212
+        plot(data(:,megChannels+1)) 
+        title('environmental denoise')
+    end
+    
+%     % delete dead / interp file if exist
+%     if deleteStepFiles
+%         if exist(badFile, 'file')
+%             delete(badFile);
+%         elseif exist(interpFile, 'file')
+%             delete(interpFile)
+%         end
+%     end
+%     
+
+    % write and save sqd    
+    edFile = sprintf('%s_%s.sqd', filename(1:end-4), analStr);
+    
+    if exist(edFile,'file')
+        error('%s_%s.sqd already exists ... will not overwrite. exiting.', filename(1:end-4), analStr)
+    else
+        sqdwrite(filename, edFile, 'data', data);
+    end
+    
+    dataset = edFile;
+end
+
 %% Find bad channels
 if removeBadChannels
     analStr = [analStr 'b'];
@@ -136,6 +183,10 @@ if removeBadChannels
         error('%s_%s.sqd already exists ... will not overwrite. exiting.', filename(1:end-4), analStr)
     else
         sqdwrite(filename, badFile, 'data', data);
+    end
+    
+    if deleteStepFiles
+        delete(edFile);
     end
     
     dataset = badFile;
@@ -197,51 +248,16 @@ if interpolate
     badChannels = []; 
 end
 
-%% Denoise using reference channels (new meg-utils)
-if environmentalDenoise 
-    % See also LSdenoise.m
-    analStr = [analStr 'e'];
-    
-    opts = [];
-    opts.ref = refChannels+1;
-    opts.meg = megChannels+1;
-    
-    % convert to time x trials x channels
-    data = permute(data,[1 3 2]);
-    data = meg_environmentalDenoising(data, opts);
-    data = permute(data,[1 3 2]); % convert back
-    
-    if plotFigs
-        figure
-        hold on
-        subplot 211
-        plot(dataOriginal(:,megChannels+1))
-        title('unprocessed')
-        subplot 212
-        plot(data(:,megChannels+1)) 
-        title('environmental denoise')
-    end
-end
-
-% delete dead / interp file if exist
-if deleteStepFiles
-    if exist(badFile, 'file')
-        delete(badFile);
-    elseif exist(interpFile, 'file')
-        delete(interpFile)
-    end
-end
-
 %% Save data preprocessed up to this point
-preFile = sprintf('%s_%s.sqd', filename(1:end-4), analStr);
-
-if exist(preFile,'file')
-    error('%s_%s.sqd already exists ... will not overwrite. exiting.', filename(1:end-4), analStr)
-else
-    sqdwrite(filename, preFile, 'data', data);
-end
-
-dataset = preFile;
+% preFile = sprintf('%s_%s.sqd', filename(1:end-4), analStr);
+% 
+% if exist(preFile,'file')
+%     error('%s_%s.sqd already exists ... will not overwrite. exiting.', filename(1:end-4), analStr)
+% else
+%     sqdwrite(filename, preFile, 'data', data);
+% end
+% 
+% dataset = preFile;
 
 %% Time-shift PCA for environmental denoising
 % http://www.isr.umd.edu/Labs/CSSL/simonlab/Denoising.html
@@ -319,7 +335,6 @@ if hpfilter
         plot(data(:,megChannels+1))
         title('high pass filter')
     end
-end
 
     filterFile = sprintf('%s_%s.sqd', filename(1:end-4), analStr);
     
@@ -336,6 +351,7 @@ end
     end
 
     dataset = filterFile;
+end
 
 %% PCA/ICA
 if components
