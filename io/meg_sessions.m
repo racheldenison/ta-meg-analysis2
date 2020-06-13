@@ -1,6 +1,6 @@
 function [sessionNames,subjectNames] = meg_sessions(expt)
 
-% function sessionNames = meg_sessions(expt)
+% function [sessionNames,subjectNames] = meg_sessions(expt)
 %
 % INPUT
 % expt
@@ -9,6 +9,8 @@ function [sessionNames,subjectNames] = meg_sessions(expt)
 % OUTPUT
 % sessionNames
 %   cell array of session names
+% subjectNames
+%   cell array of subject names 
 
 switch expt
     case 'TANoise'

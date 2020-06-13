@@ -13,7 +13,7 @@ function meg_plotBehav(expt, user)
 % May 2020
 
 %% inputs
-expt = 'TA2'; % TANoise 
+expt = 'TANoise'; % TANoise 
 user = 'karen'; % for file path to save figures ß
 plotAxis = 1; % slice by axis orientation 
 saveFigs = 1; % saves .svg to current directory 
@@ -195,7 +195,7 @@ for iT = 1:numel(targets)
             nanstd(nanmean(groupB.(targets{iT}).(fields{iF}).subjectRT,1),[],2)/sqrt(numel(subjectNames)),...
             'Color',color,...
             'Marker','.','MarkerSize',30,...
-            'LineWidth',2)
+            'LineWidth',2,'CapSize',12)
     end
 end
 xlim([0 3])
@@ -225,7 +225,7 @@ for iT = 1:numel(targets)
             nanstd(nanmean(groupB.(targets{iT}).(fields{iF}).subjectAcc,1),[],2)/sqrt(numel(subjectNames)),...
             'Color',color,...
             'Marker','.','MarkerSize',30,...
-            'LineWidth',2)
+            'LineWidth',2,'CapSize',12)
     end
 end
 xlim([0 3])
@@ -258,7 +258,7 @@ if plotAxis
             errorbar(iT+offset,mean0,ste0,...
             'Color',color,...
             'Marker','.','MarkerSize',30,...
-            'LineWidth',2)
+            'LineWidth',2,'CapSize',12)
         
             offset = 0.15; 
             mean90 = nanmean(nanmean(groupB.(targets{iT}).(fields{iF}).subjectDprime90,1),2); 
@@ -266,13 +266,13 @@ if plotAxis
             errorbar(iT+offset,mean90,ste90,...
             'Color',color,...
             'Marker','.','MarkerSize',30,...
-            'LineWidth',2) 
+            'LineWidth',2,'CapSize',12) 
         end
     end
     xlim([0 3])
     xticks([1 2])
     xticklabels({'T1', 'T2'})
-    ylim([0 2.5])
+    ylim([0 3])
     ylabel('sensitivity (d'')')
     if saveFigs 
         saveas(gcf,[expt,'_cue_dprime_axis.svg'])
@@ -300,7 +300,7 @@ if plotAxis
             errorbar(iT+offset,mean0,ste0,...
             'Color',color,...
             'Marker','.','MarkerSize',30,...
-            'LineWidth',2)
+            'LineWidth',2,'CapSize',12)
         
             offset = 0.15; 
             mean90 = nanmean(nanmean(groupB.(targets{iT}).(fields{iF}).subjectRT90,1),2); 
@@ -308,7 +308,7 @@ if plotAxis
             errorbar(iT+offset,mean90,ste90,...
             'Color',color,...
             'Marker','.','MarkerSize',30,...
-            'LineWidth',2)
+            'LineWidth',2,'CapSize',12)
         end
     end
     xlim([0 3])
@@ -342,7 +342,7 @@ if plotAxis
             errorbar(iT+offset,mean0,ste0,...
             'Color',color,...
             'Marker','.','MarkerSize',30,...
-            'LineWidth',2)
+            'LineWidth',2,'CapSize',12)
         
             offset = 0.15; 
             mean90 = nanmean(nanmean(groupB.(targets{iT}).(fields{iF}).subjectAcc90,1),2); 
@@ -350,7 +350,7 @@ if plotAxis
             errorbar(iT+offset,mean90,ste90,...
             'Color',color,...
             'Marker','.','MarkerSize',30,...
-            'LineWidth',2)
+            'LineWidth',2,'CapSize',12)
         end
     end
     xlim([0 3])
@@ -392,4 +392,49 @@ ylim([0 2.5])
 ylabel('sensitivity (d'')') 
 if saveFigs
     saveas(gcf,[expt,'_cue_dprime_sessions.svg'])
+end
+
+%% plot dprime by upper downer 
+
+variableOI = 'subjectRT'; % 'subjectDprime' 'subjectAcc'
+subjectOI = downers; 
+subjectType = 'downers'; 
+
+figure
+hold on 
+set(gcf,'Position',[100 100 200 400]) 
+for iT = 1:numel(targets)
+    for iF = 1:numel(fields)    
+        if strcmp(expt,'TA2') && strcmp(fields{iF},'neutral')
+            color = p.cueColors(3,:); % neutral
+        elseif iF == iT
+            color = p.cueColors(1,:); % valid
+        else
+            color = p.cueColors(2,:); % invalid
+        end
+        val = groupB.(targets{iT}).(fields{iF}).(variableOI)(subjectOI); 
+        meanVal = nanmean(val); 
+        steVal = nanstd(val)/sqrt(numel(subjectOI)); 
+        errorbar(iT,meanVal,steVal,...
+            'Color',color,...
+            'Marker','.','MarkerSize',30,...
+            'LineWidth',2,'CapSize',12); 
+    end
+end
+xlim([0 3])
+xticks([1 2])
+xticklabels({'T1' 'T2'})
+switch variableOI
+    case 'subjectRT'
+        ylabel('reaction time (ms)') 
+        ylim([0 1.5])
+    case 'subjectDprime'
+        ylabel('sensitivity (d'')') 
+        ylim([0 2.5])
+    case 'subjectAcc'
+        ylabel('accuracy (proportion correct)') 
+        ylim([0.5 1])
+end
+if saveFigs
+    saveas(gcf,sprintf('%s_cue_%s_%s.svg',expt,variableOI,subjectType))
 end
