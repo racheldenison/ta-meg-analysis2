@@ -54,6 +54,7 @@ for i = 1:numel(sessionNames)
         for iF = 1:numel(fields)
             targetIdx = find(groupDAll(i).B.responseTarget==iT);
             fieldIdx = groupDAll(i).I.(fields{iF}); 
+            % responseIdx = find(groupDAll(i).B.presentResponse==1); 
             unionIdx = intersect(targetIdx,fieldIdx); 
             
             groupB.(targets{iT}).(fields{iF}).acc(:,i) = groupDAll(i).B.acc(unionIdx);
@@ -61,7 +62,15 @@ for i = 1:numel(sessionNames)
             groupB.(targets{iT}).(fields{iF}).targetOrientation(:,i) = groupDAll(i).B.targetOrientation(unionIdx);
             
             groupB.(targets{iT}).(fields{iF}).hit(:,i) = groupDAll(i).B.discrimHMFC(unionIdx,1);
-            groupB.(targets{iT}).(fields{iF}).fa(:,i)  = groupDAll(i).B.discrimHMFC(unionIdx,3);     
+            groupB.(targets{iT}).(fields{iF}).fa(:,i)  = groupDAll(i).B.discrimHMFC(unionIdx,3);
+            
+            targetOri = groupB.(targets{iT}).(fields{iF}).targetOrientation(:,i);
+            trialsYes = groupB.(targets{iT}).(fields{iF}).acc(:,i);
+            trialsYes = trialsYes(targetOri==1); % take target orientation 1 as hit
+            trialsYes = trialsYes(~isnan(trialsYes));
+            nTrialsYes = size(trialsYes,1); 
+            
+            groupB.(targets{iT}).(fields{iF}).nTrialsYes(i) = nTrialsYes; 
             
             if plotAxis
                 % orientation
@@ -91,18 +100,14 @@ end
 
 for iT = 1:numel(targets)
     for iF = 1:numel(fields)
-        nTrialsYes = size(groupB.(targets{iT}).(fields{iF}).acc,1)/2; 
         countSubject = 1;
         for i = 1:2:numel(sessionNames)
             groupB.(targets{iT}).(fields{iF}).subjectAcc(:,countSubject) = nanmean(nanmean(nanmean(groupB.(targets{iT}).(fields{iF}).acc(:,i:i+1),2)));
             groupB.(targets{iT}).(fields{iF}).subjectRT(:,countSubject) = nanmean(nanmean(nanmean(groupB.(targets{iT}).(fields{iF}).rt(:,i:i+1),2)));
-            
-            % groupB.(targets{iT}).(fields{iF}).subjectHit(:,countSubject) = nanmean(groupB.(targets{iT}).(fields{iF}).hit(:,i:i+1),2);
-            % groupB.(targets{iT}).(fields{iF}).subjectFA(:,countSubject) = nanmean(groupB.(targets{iT}).(fields{iF}).fa(:,i:i+1),2);
-            
+        
             % dprime 
-            hit = nansum(groupB.(targets{iT}).(fields{iF}).hit)./nTrialsYes; 
-            fa = nansum(groupB.(targets{iT}).(fields{iF}).fa)./nTrialsYes; 
+            hit = nansum(groupB.(targets{iT}).(fields{iF}).hit)./groupB.(targets{iT}).(fields{iF}).nTrialsYes; 
+            fa = nansum(groupB.(targets{iT}).(fields{iF}).fa)./groupB.(targets{iT}).(fields{iF}).nTrialsYes; 
             
             hit(hit==1) = 0.99; 
             hit(hit==0) = 0.01; 
