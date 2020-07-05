@@ -33,7 +33,7 @@ if nargin == 0
     sessionDir = 'R1187_20181119';
 %     expt = 'TANoise';
 %     sessionDir = 'R1187_20180105';
-    user = 'mcq'; % 'mcq','karen','rachel','karenhd'
+    user = 'karen'; % 'mcq','karen','rachel','karenhd'
 end
 if ~exist('user','var')
     user = [];
@@ -41,19 +41,22 @@ end
 
 %% Settings
 % analysis options
-analStr = 'bietfp';
-paramType = 'Analysis';
+analStr = 'ebi'; % 'bietfp'
+preprocStr = 'ebi'; 
+
+paramType = 'ITPC'; %Preproc, Analysis, ITPC 
 analType = 'none'; % 'none','readdata','sortchannels','ERF','TF','decode'
-sliceType = 'all'; % 'all','cue'
+sliceType = 'cue'; % 'all','cue','cueAcc'
 
 % data
-loadData = 1; 
+loadData = 0; 
+readData = 1; 
 
 % channels
-loadChannels = 0;
-channelSelectionType = '20Hz_ebi'; % 'peakprom','classweights','20Hz_ebi'
+loadChannels = 1;
+channelSelectionType = '20Hz_ebi'; % '20Hz_ebi'; % 'peakprom','classweights','20Hz_ebi'
 
-selectChannels = 0;
+selectChannels = 1;
 nChannelsSelected = 5; % number of channels to select from channelsRanked
 
 % saving
@@ -65,7 +68,7 @@ saveFigs = 0;
 exptDir = meg_pathToTAMEG(expt, user);
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 matDir = sprintf('%s/mat', dataDir);
-preprocDir = sprintf('%s/preproc', dataDir);
+preprocDir = sprintf('%s/preproc_%s', dataDir, preprocStr);
 prepDir = sprintf('%s/prep', dataDir);
 figDir = sprintf('%s/figures/%s', dataDir, analStr);
 behavDir = sprintf('%s/Behavior/%s/analysis', exptDir(1:end-4), sessionDir);
@@ -96,7 +99,11 @@ end
 
 %% Load data
 if loadData
-    load(dataFile, 'data')
+    load(dataFile, 'data') % time x ch x trial
+elseif readData % Read preprocessed sqd
+    [~, data] = meg_getData(sqdFile,p); % time x channels x trials
+    save (dataFile, 'data', '-v7.3')
+    % save (sprintf('%s/%s_%s_prep_data.mat',prepDir,fileBase,analStr),'prep_data', '-v7.3')
 else
     data = [];
 end
@@ -116,7 +123,7 @@ else
     selectedChannels = [];
 end
 
-%% Slice data by condition (here cue condition)
+%% Slice data by condition 
 switch sliceType
     case 'all'
         cond = B.targetPresent;
@@ -133,8 +140,14 @@ switch sliceType
             case 'TANoise'
                 levelNames = {{'cueT1','cueT2'}};
         end
+    
+    case 'cueAcc'
+        cond = [B.cuedTarget B.acc]; 
+        condNames = {'cueCond','acc'}; 
+        levelNames = {{'cueT1','cueT2','cueN'},{'incorrect','correct'}}; 
+        % cond(acc==1) = cond(acc==1)+10; % correct      
         
-    otherwise
+    otherwise 
         error('sliceType not recognized')
 end
 
@@ -146,11 +159,11 @@ switch analType
         % just return sliced data or selected channels
         A = [];
         
-    case 'readdata'
-        %% Read preprocessed sqd
-        [prep_data, data] = meg_getData(sqdFile,p); % time x channels x trials
-        save (dataFile, 'data', '-v7.3')
-        save (sprintf('%s/%s_%s_prep_data.mat',prepDir,fileBase,analStr),'prep_data', '-v7.3')
+%     case 'readdata'
+%         %% Read preprocessed sqd
+%         [prep_data, data] = meg_getData(sqdFile,p); % time x channels x trials
+%         save (dataFile, 'data', '-v7.3')
+%         save (sprintf('%s/%s_%s_prep_data.mat',prepDir,fileBase,analStr),'prep_data', '-v7.3')
         
     case 'sortchannels'
         %% Sort channels
@@ -195,6 +208,10 @@ switch analType
         if saveAnalysis
             save(sprintf('%s/TF.mat',matDir),'A','-v7.3')
         end
+        
+    case 'itpc'
+        ssvefFreq = 20; %
+        [A,fH,figNames] = meg_plotITPC(D,sessionDir,p,selectedChannels,ssvefFreq); 
         
     case 'alpha'
         %% Eyes closed alpha analyses

@@ -1,4 +1,4 @@
-function [sessionNames,subjectNames,ITPCDir] = meg_sessions(expt)
+function [sessionNames,subjectNames,ITPCDir,sessionITPCDir] = meg_sessions(expt)
 
 % function [sessionNames,subjectNames] = meg_sessions(expt)
 %
@@ -13,6 +13,7 @@ function [sessionNames,subjectNames,ITPCDir] = meg_sessions(expt)
 %   cell array of subject names 
 % ITPCDir
 %   array of subject ITPC evoked response direction (1 increase, -1 decrease)
+% sessionITPCDir 
 
 switch expt
     case 'TANoise'
@@ -36,7 +37,7 @@ switch expt
         	'R1373',...
             'R1452',...
             'R1507'};
-        ITPCDir = {1,... % 'R0817'
+        ITPCDir = [1,... % 'R0817'
             1,... % 'R0898'
             -1,...% 'R0959'
             -1,...% 'R0983'
@@ -46,7 +47,15 @@ switch expt
         	1,...% 'R1373'
             -1,...% 'R1452'
             -1% 'R1507'};
-            }; 
+            ]; 
+        
+        subject = 1;
+        for i = 1:2:numel(sessionNames)
+            val = ITPCDir(subject);
+            sessionITPCDir(i) = val;
+            sessionITPCDir(i+1) = val;
+            subject = subject+1;
+        end
 
     case 'TA2'
         sessionNames = {'R0817_20181120', 'R0817_20190625',...
