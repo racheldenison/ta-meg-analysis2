@@ -12,13 +12,14 @@ sessionNames = allSessions(sessionIdx);
 
 %% run analysis 
 groupA = []; groupD = []; groupI = []; groupB = []; 
-for i= 1:numel(sessionNames) % skipped 8, cant read sqd? m
+
+for i= 2:7% 1:numel(sessionNames) % skipped 8, cant read sqd? m
     sessionDir = sessionNames{i}; 
     disp(sessionDir)
     sessionIdx = i; 
 
-    % [A, D, selectedChannels, I, B] = meg_runAnalysis(expt, sessionDir, user,sessionIdx); 
-    [A] = loadGroupAnalysis(expt,sessionDir,user); 
+    [A, D, selectedChannels, I, B] = meg_runAnalysis(expt,sessionDir,user,sessionIdx); 
+    % [A] = loadGroupAnalysis(expt,sessionDir,user); 
     groupA{i} = A;
     % groupD{i} = D; 
     % groupB{i} = B; 

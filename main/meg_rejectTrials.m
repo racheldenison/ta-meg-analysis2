@@ -1,4 +1,4 @@
-function data = meg_rejectTrials(data, dataDir)
+function [data,nTrialsRejected] = meg_rejectTrials(data, dataDir)
 
 % data = MEG_REJECTTRIALS(data)
 %
@@ -8,6 +8,8 @@ function data = meg_rejectTrials(data, dataDir)
 % OUPUT 
 % data
 %   data matrix, time x channels x trials rejected NaN
+% nTrialsRejected
+%   number of trials rejected 
 %
 % Karen Tian
 % January 2020
@@ -19,10 +21,11 @@ end
 
 %% NaN manually rejected channels 
 try
-    load(sprintf('%s/mat/trials_rejected.mat', dataDir), 'trials_rejected'); 
+    load(sprintf('%s/mat/trials_rejected.mat', dataDir), 'trials_rejected'); % file paths of trials_rejected sometimes saved differently 
 catch
     load(sprintf('%s/prep/trials_rejected.mat', dataDir), 'trials_rejected'); 
 end
+nTrialsRejected = size(trials_rejected,1); 
 data(:,:,trials_rejected) = NaN; 
 
 end

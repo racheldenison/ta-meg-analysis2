@@ -55,6 +55,7 @@ switch expt
         p.poststim = 2.3; 
         p.precueChannel = 168; 
         p.blankChannel = 167; 
+        p.ssvefFreq = 20; 
         
     case 'TANoise_Analysis'
         p.eventTimes = [0 1050 1350 2300]; % accounting for 50ms photodiode delay
@@ -65,6 +66,7 @@ switch expt
         p.poststim = 3.9; 
         p.precueChannel = 168; 
         p.blankChannel = 167; 
+        p.ssvefFreq = 20; 
         
     case 'TANoise_ITPC'
         p.eventTimes = [0 1050 1350 2300];
@@ -77,6 +79,7 @@ switch expt
         p.blankChannel = 167;
         p.trialDefTrig = [p.precueChannel,p.blankChannel];
         p.trialTime = 8000; % ms
+        p.ssvefFreq = 20; 
         
     case 'TANoise_ITPCsession8'
         p.eventTimes = [0 1050 1350 2300];
@@ -89,14 +92,15 @@ switch expt
         p.blankChannel = 167;
         p.trialDefTrig = [p.precueChannel,p.blankChannel];
         p.trialTime = 7000; % ms
+        p.ssvefFreq = 20; 
         
-    case 'Cupcake'
-        p.tstart = -1000; 
-        p.tstop = 2000; 
-        p.prestim = 1; 
-        p.poststim = 2;
-        triggerChannels = 160:167;
-        p.trialDefTrig = triggerChannels(2)+1;  
+%     case 'Cupcake'
+%         p.tstart = -1000; 
+%         p.tstop = 2000; 
+%         p.prestim = 1; 
+%         p.poststim = 2;
+%         triggerChannels = 160:167;
+%         p.trialDefTrig = triggerChannels(2)+1;  
  
     otherwise 
         disp('expt type not recognized')

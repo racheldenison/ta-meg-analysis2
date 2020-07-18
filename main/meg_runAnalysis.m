@@ -44,13 +44,15 @@ end
 analStr = 'ebi'; % 'bietfp'
 preprocStr = 'ebi'; 
 
-paramType = 'ITPCsession8'; % for meg_params 'Preproc', 'Analysis', 'ITPC' 
-analType = 'itpc'; % 'none','readdata','sortchannels','ERF','TF','decode'
-sliceType = 'cue'; % 'all','cue','cueAcc'
+paramType = 'ITPC'; % for meg_params 'Preproc', 'Analysis', 'ITPC', 'ITPCsession8" (to correct for the cutoff run)
+analType = 'ITPC'; % 'none','readdata','sortchannels','ERF','TF','decode'
+sliceType = 'all'; % 'all','cue','cueAcc'
 
 % data
-loadData = 0; 
-readData = 1; 
+% readData = 0; % read data from sqd into matrix .mat 
+% loadData = 1; % read data from prepared .mat 
+getData = 'fromSqd'; % 'fromSqd' (read data from sqd), 'fromMat' (load data from prepared .mat) 
+saveData = 0; % save .mat 
 
 % channels
 loadChannels = 1;
@@ -97,33 +99,48 @@ if ~exist(prepDir,'dir')
     mkdir(prepDir)
 end
 
-%% Load data
-if loadData
-    load(dataFile, 'data') % time x ch x trial
-elseif readData % Read preprocessed sqd
-    [~, data] = meg_getData(sqdFile,p); % time x channels x trials
-    % save (dataFile, 'data', '-v7.3')
-    % save (sprintf('%s/%s_%s_prep_data.mat',prepDir,fileBase,analStr),'prep_data', '-v7.3')
-else
-    data = [];
+%% Get data (time x ch x trials) 
+switch getData        
+    case 'fromSqd' % Read preprocessed sqd
+        [~, data] = meg_getData(sqdFile,p); % time x channels x trials
+        if saveData
+            save(dataFile, 'data', '-v7.3')
+            save(sprintf('%s/%s_%s_prep_data.mat',prepDir,fileBase,analStr),'prep_data', '-v7.3')
+        end
+    case 'fromMat'
+        load(dataFile, 'data') % time x ch x trial 
+    otherwise
+        data = [];
 end
+fprintf('data read %s \n', getData)
 
 %% Reject trials
-data = meg_rejectTrials(data, dataDir); % NaN manually rejected trials
+[data, nTrialsRejected] = meg_rejectTrials(data, dataDir); % NaN manually rejected trials
+fprintf('%d trials rejected \n', nTrialsRejected)
 
-%% flip data based on polarity at precue (only for TANoise ssvef analysis) 
-load('/Users/kantian/Dropbox/Data/TANoise/MEG/Group/mat/channels/TANoise_20Hz_chDir.mat','chDir')
-chDir = chDir(sessionIdx,:);
+%% flip data based on polarity
 
-for iCh = 1:numel(p.megChannels)
-    vals = [];
-    flip = 1; 
-    if chDir(iCh)==-1
-        flip = -1;
-    end
-    vals = data(:,iCh,:); 
-    vals = vals.*flip;
-    data(:,iCh,:) = vals;
+switch analType
+    case 'ITPC'
+        load('/Users/kantian/Dropbox/Data/TANoise/MEG/Group/mat/channels/TANoise_20Hz_chDir.mat','chDir')
+        chDir = chDir(sessionIdx,:); % resave w sessionDir info so don't need sessionIdx input 
+        
+        for iCh = 1:numel(p.megChannels)
+            vals = [];
+            flip = 1;
+            if chDir(iCh)==-1
+                flip = -1;
+            end
+            vals = data(:,iCh,:);
+            vals = vals.*flip;
+            data(:,iCh,:) = vals;
+        end
+        
+        disp('flipped data based on polarity')
+        
+    otherwise
+        disp('unflipped data')
+        
 end
 
 %% Channel selection
@@ -137,6 +154,7 @@ if selectChannels
 else
     selectedChannels = [];
 end
+fprintf('channel selection: %s \n', channelSelectionType)
 
 %% Slice data by condition 
 switch sliceType
@@ -161,12 +179,13 @@ switch sliceType
         condNames = {'cueCond','acc'}; 
         levelNames = {{'cueT1','cueT2','cueN'},{'incorrect','correct'}}; 
         % cond(acc==1) = cond(acc==1)+10; % correct      
-        
+               
     otherwise 
         error('sliceType not recognized')
 end
 
 [D, I] = meg_slicer(data, cond, condNames, levelNames);
+fprintf('sliced data by: %s \n', sliceType)
 
 %% Run analysis
 switch analType
@@ -224,12 +243,19 @@ switch analType
             save(sprintf('%s/TF.mat',matDir),'A','-v7.3')
         end
         
-    case 'itpc'
-        ssvefFreq = 20; %
-        selectedChannels = channelsRanked(1:5); 
-        [A,fH,figNames] = meg_plotITPC(D,sessionDir,p,selectedChannels,ssvefFreq); 
+    case 'ITPC' % phase angle 
         
-        itpcFigDir = sprintf('%s/ITPC',figDir);
+        % average data across trials 
+        fieldNames = fieldnames(D); Davg = []; 
+        for i = 1:numel(fieldNames)
+            Davg.(fieldNames{i})(:,:,1) = nanmean(D.(fieldNames{i}),3);
+        end
+        D = []; D = Davg; 
+        
+        selectedChannels = channelsRanked(1:5); 
+        [A,fH,figNames] = meg_plotITPCavg(D,sessionDir,p,selectedChannels,p.ssvefFreq); 
+        
+        itpcFigDir = sprintf('%s/ITPCAvgTrials',figDir); 
         if ~exist(itpcFigDir,'dir')
             mkdir(itpcFigDir)
         end
@@ -238,13 +264,12 @@ switch analType
             rd_saveAllFigs(fH, figNames, sessionDir, itpcFigDir, [])
         end
         if saveAnalysis
-            save(sprintf('%s/SSVEF.mat',matDir),'A','-v7.3')
+            save(sprintf('%s/ITPCavg.mat',matDir),'A','-v7.3')
         end
         
     case 'alpha'
         %% Eyes closed alpha analyses
-        %%% RD: adjust inputs, rename to meg_plotAlpha? revisit this
-        %%% function
+        % RD: adjust inputs, rename to meg_plotAlpha? revisit 
         [A,fH,figNames] = meg_alpha(eyesClosedFileBI,sessionDir);
         
         if saveFigs
@@ -297,6 +322,8 @@ switch analType
     otherwise
         error('analType not recognized')
 end
+
+fprintf('analysis: %s \n', analType)
 
 end
 
