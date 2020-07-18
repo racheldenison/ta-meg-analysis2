@@ -3,7 +3,7 @@ function p = meg_params(expt)
 % function p = meg_params(expt)
 %
 % INPUT
-%   expt: string expt type ('TA2_Preproc','TA2_Analysis','TANoise_Preproc','TANoise_Analysis','Cupcake') 
+%   expt: string expt type ('TA2_Preproc','TA2_Analysis','TANoise_Preproc','TANoise_Analysis','TANoise_ITPC','TANoise_ITPC8','Cupcake') 
 % OUTPUT
 % p
 %   parameters, including channel info, event timing, trial segmenting 
@@ -21,6 +21,7 @@ p.cueColors = [122/255 142/255 194/255;  % cueT1 blue
     128/255 128/255 128/255; % cueNeutral grey
     157/255 135/255 212/255]; % difference purple
 p.colorAlpha = 0.75; % transparency
+p.cueErrorBarColors = [163/255 180/255 216/255; 232/255,168/255,154/255];
 
 switch expt    
     case 'TA2_Preproc'
@@ -64,6 +65,30 @@ switch expt
         p.poststim = 3.9; 
         p.precueChannel = 168; 
         p.blankChannel = 167; 
+        
+    case 'TANoise_ITPC'
+        p.eventTimes = [0 1050 1350 2300];
+        p.eventNames = {'precue','T1','T2','response cue'};
+        p.tstart = -2000;
+        p.tstop = 6000;
+        p.prestim = 2.0;
+        p.poststim = 6.0;
+        p.precueChannel = 168;
+        p.blankChannel = 167;
+        p.trialDefTrig = [p.precueChannel,p.blankChannel];
+        p.trialTime = 8000; % ms
+        
+    case 'TANoise_ITPCsession8'
+        p.eventTimes = [0 1050 1350 2300];
+        p.eventNames = {'precue','T1','T2','response cue'};
+        p.tstart = -2000;
+        p.tstop = 5000;
+        p.prestim = 2.0;
+        p.poststim = 5.0;
+        p.precueChannel = 168;
+        p.blankChannel = 167;
+        p.trialDefTrig = [p.precueChannel,p.blankChannel];
+        p.trialTime = 7000; % ms
         
     case 'Cupcake'
         p.tstart = -1000; 

@@ -1,4 +1,4 @@
-function [A, D, selectedChannels, I, B] = meg_runAnalysis(expt, sessionDir, user)
+function [A, D, selectedChannels, I, B] = meg_runAnalysis(expt, sessionDir, user,sessionIdx)
 
 % function [A, D, selectedChannels, I, B] = meg_runAnalysis(exptName, sessionDir, [user])
 %
@@ -44,8 +44,8 @@ end
 analStr = 'ebi'; % 'bietfp'
 preprocStr = 'ebi'; 
 
-paramType = 'ITPC'; %Preproc, Analysis, ITPC 
-analType = 'none'; % 'none','readdata','sortchannels','ERF','TF','decode'
+paramType = 'ITPCsession8'; % for meg_params 'Preproc', 'Analysis', 'ITPC' 
+analType = 'itpc'; % 'none','readdata','sortchannels','ERF','TF','decode'
 sliceType = 'cue'; % 'all','cue','cueAcc'
 
 % data
@@ -56,12 +56,12 @@ readData = 1;
 loadChannels = 1;
 channelSelectionType = '20Hz_ebi'; % '20Hz_ebi'; % 'peakprom','classweights','20Hz_ebi'
 
-selectChannels = 1;
+selectChannels = 0;
 nChannelsSelected = 5; % number of channels to select from channelsRanked
 
 % saving
-saveAnalysis = 0;
-saveFigs = 0;
+saveAnalysis = 1;
+saveFigs = 1;
 
 %% Setup
 % directories
@@ -102,7 +102,7 @@ if loadData
     load(dataFile, 'data') % time x ch x trial
 elseif readData % Read preprocessed sqd
     [~, data] = meg_getData(sqdFile,p); % time x channels x trials
-    save (dataFile, 'data', '-v7.3')
+    % save (dataFile, 'data', '-v7.3')
     % save (sprintf('%s/%s_%s_prep_data.mat',prepDir,fileBase,analStr),'prep_data', '-v7.3')
 else
     data = [];
@@ -110,6 +110,21 @@ end
 
 %% Reject trials
 data = meg_rejectTrials(data, dataDir); % NaN manually rejected trials
+
+%% flip data based on polarity at precue (only for TANoise ssvef analysis) 
+load('/Users/kantian/Dropbox/Data/TANoise/MEG/Group/mat/channels/TANoise_20Hz_chDir.mat','chDir')
+chDir = chDir(sessionIdx,:);
+
+for iCh = 1:numel(p.megChannels)
+    vals = [];
+    flip = 1; 
+    if chDir(iCh)==-1
+        flip = -1;
+    end
+    vals = data(:,iCh,:); 
+    vals = vals.*flip;
+    data(:,iCh,:) = vals;
+end
 
 %% Channel selection
 if loadChannels
@@ -211,7 +226,20 @@ switch analType
         
     case 'itpc'
         ssvefFreq = 20; %
+        selectedChannels = channelsRanked(1:5); 
         [A,fH,figNames] = meg_plotITPC(D,sessionDir,p,selectedChannels,ssvefFreq); 
+        
+        itpcFigDir = sprintf('%s/ITPC',figDir);
+        if ~exist(itpcFigDir,'dir')
+            mkdir(itpcFigDir)
+        end
+        
+        if saveFigs
+            rd_saveAllFigs(fH, figNames, sessionDir, itpcFigDir, [])
+        end
+        if saveAnalysis
+            save(sprintf('%s/SSVEF.mat',matDir),'A','-v7.3')
+        end
         
     case 'alpha'
         %% Eyes closed alpha analyses
