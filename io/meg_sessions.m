@@ -1,4 +1,4 @@
-function [sessionNames,subjectNames,ITPCDir,sessionITPCDir] = meg_sessions(expt)
+function [sessionNames,subjectNames,ITPCsubject,ITPCsession] = meg_sessions(expt)
 
 % function [sessionNames,subjectNames] = meg_sessions(expt)
 %
@@ -37,7 +37,7 @@ switch expt
         	'R1373',...
             'R1452',...
             'R1507'};
-        ITPCDir = [1,... % 'R0817'
+        ITPCsubject = [1,... % 'R0817'
             1,... % 'R0898'
             -1,...% 'R0959'
             -1,...% 'R0983'
@@ -51,9 +51,9 @@ switch expt
         
         subject = 1;
         for i = 1:2:numel(sessionNames)
-            val = ITPCDir(subject);
-            sessionITPCDir(i) = val;
-            sessionITPCDir(i+1) = val;
+            val = ITPCsubject(subject);
+            ITPCsession(i) = val;
+            ITPCsession(i+1) = val;
             subject = subject+1;
         end
 
