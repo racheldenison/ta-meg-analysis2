@@ -1,6 +1,6 @@
 function [sessionNames,subjectNames,ITPCsubject,ITPCsession] = meg_sessions(expt)
 
-% function [sessionNames,subjectNames] = meg_sessions(expt)
+% function [sessionNames,subjectNames,ITPCsubject,ITPCsession] = meg_sessions(expt)
 %
 % INPUT
 % expt
