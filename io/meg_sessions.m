@@ -48,8 +48,7 @@ switch expt
             -1,...% 'R1452'
             -1% 'R1507'};
             ]; 
-        
-        subject = 1;
+        subject = 1; % ITPC session 
         for i = 1:2:numel(sessionNames)
             val = ITPCsubject(subject);
             ITPCsession(i) = val;
@@ -70,7 +69,7 @@ switch expt
             'R1547_20190729', 'R1547_20190730'}; % N=10 x 2 sessions TA2
         %   'R1535_20190708', 'R1535_20190711',...
         subjectNames = {'R0817',...
-            'R0898',...
+            'R0898',... 
             'R0959',...
             'R0983',...
             'R1103',...
@@ -79,6 +78,24 @@ switch expt
             'R1452',...
             'R1507',...
             'R1547'};
+        ITPCsubject = [1,... % 'R0817'
+            1,... % 'R0898'
+            -1,...% 'R0959'
+            -1,...% 'R0983'
+            1,...% 'R1103'
+            -1,...% 'R1187'
+            1,...% 'R1373'
+        	-1,...% 'R1452'
+            -1,...% 'R1507'
+            0 % 'R1547'};
+            ];
+        subject = 1; % ITPC session 
+        for i = 1:2:numel(sessionNames)
+            val = ITPCsubject(subject);
+            ITPCsession(i) = val;
+            ITPCsession(i+1) = val;
+            subject = subject+1;
+        end
         
     otherwise
         error('expt not recognized')
