@@ -1,6 +1,6 @@
 function [A,fH,figNames] = meg_plotTF(data,p,selectedChannels,selectedFreq)
 
-% MEG_PLOTERP(data,selectedChannels,plotSingleTrial,plotAvgTrial)
+% MEG_PLOTTF(data,p,selectedChannels,selectedFreq)
 %
 % INPUT
 % data
@@ -243,26 +243,27 @@ legend(condNames)
 title(sprintf('Frequency %d - %d (Hz)',selectedFreq(1),selectedFreq(end)))
 
 %% diff TF 
-condition1 = A.cueT1.normPows; 
-condition2 = A.cueT2.normPows; 
-diffc2c1 = condition2 - condition1; % difference
-% meanDiff = nanmean(diffc2c1,2); % mean diff pow 
-% diff = diffc2c1./meanDiff-1; % then normalize 
-
-figure 
-set(gcf,'Position',[100 100 300 350])
-hold on
-imagesc(diffc2c1)
-xlim(xlims)
-ylim(ylims)
-xlabel('time (s)')
-ylabel('frequency (Hz)')
-colorbar
-meg_timeFreqPlotLabels(toi,foi,xtick,ytick,p.eventTimes);
-title('cue T2 - cue T1 (power, norm)')
+% condition1 = A.cueT1.normPows; 
+% condition2 = A.cueT2.normPows; 
+% diffc2c1 = condition2 - condition1; % difference
+% % meanDiff = nanmean(diffc2c1,2); % mean diff pow 
+% % diff = diffc2c1./meanDiff-1; % then normalize 
+% 
+% figure 
+% set(gcf,'Position',[100 100 300 350])
+% hold on
+% imagesc(diffc2c1)
+% xlim(xlims)
+% ylim(ylims)
+% xlabel('time (s)')
+% ylabel('frequency (Hz)')
+% colorbar
+% meg_timeFreqPlotLabels(toi,foi,xtick,ytick,p.eventTimes);
+% title('cue T2 - cue T1 (power, norm)')
 
 %% return figure handle
 
 fH = sort(double(findobj(0,'Type','figure')));
-figNames = {'TF','TFnorm','FFTAllCh','FFTSelectCh','Freq','TF_diffT2T1'}; 
+% figNames = {'TF','TFnorm','FFTAllCh','FFTSelectCh','Freq','TF_diffT2T1'}; 
+figNames = {'TF','TFnorm','FFTAllCh','FFTSelectCh','Freq'}; 
 
