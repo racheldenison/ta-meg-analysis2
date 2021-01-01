@@ -1,4 +1,4 @@
-function [A, D, selectedChannels, I, B] = meg_runAnalysis(expt, sessionDir, user,sessionIdx)
+function [A, D, selectedChannels, I, B] = meg_runAnalysis(expt, sessionDir, user, sessionIdx)
 
 % function [A, D, selectedChannels, I, B] = meg_runAnalysis(exptName, sessionDir, [user])
 %
@@ -26,13 +26,10 @@ function [A, D, selectedChannels, I, B] = meg_runAnalysis(expt, sessionDir, user
 % Karen Tian
 % January 2020
 
-
 %% inputs
 if nargin == 0
-    expt = 'TA2'; % TANoise
-    sessionDir = 'R1187_20181119';
-%     expt = 'TANoise';
-%     sessionDir = 'R1187_20180105';
+    expt = 'TA2'; % 'TANoise'
+    sessionDir = 'R1187_20181119'; % 'R1187_20180105'
     user = 'karen'; % 'mcq','karen','rachel','karenhd'
 end
 if ~exist('user','var')
@@ -44,13 +41,12 @@ end
 analStr = 'ebi'; % 'bietfp'
 preprocStr = 'ebi'; 
 
-paramType = 'ITPC'; % for meg_params 'Preproc', 'Analysis', 'ITPC', 'ITPCsession8" (to correct for the cutoff run)
-analType = 'ITPC'; % 'none','readdata','sortchannels','ERF','TF','decode'
-sliceType = 'all'; % 'all','cue','cueAcc'
+paramType = 'ITPCsession8'; % for meg_params 'Preproc', 'Analysis', 'ITPC', 'ITPCsession8" (to correct for the cutoff run)
+analType = 'ITPC'; % 'ITPC'; % 'none','readdata','sortchannels','ERF','TF','decode', 'TFwholeTrial'
+avgTrial = 0; 
+sliceType = 'cue'; % 'all','cue','cueAcc'
 
 % data
-% readData = 0; % read data from sqd into matrix .mat 
-% loadData = 1; % read data from prepared .mat 
 getData = 'fromSqd'; % 'fromSqd' (read data from sqd), 'fromMat' (load data from prepared .mat) 
 saveData = 0; % save .mat 
 
@@ -58,11 +54,11 @@ saveData = 0; % save .mat
 loadChannels = 1;
 channelSelectionType = '20Hz_ebi'; % '20Hz_ebi'; % 'peakprom','classweights','20Hz_ebi'
 
-selectChannels = 0;
+selectChannels = 1;
 nChannelsSelected = 5; % number of channels to select from channelsRanked
 
 % saving
-saveAnalysis = 1;
+saveAnalysis = 0;
 saveFigs = 1;
 
 %% Setup
@@ -74,6 +70,7 @@ preprocDir = sprintf('%s/preproc_%s', dataDir, preprocStr);
 prepDir = sprintf('%s/prep', dataDir);
 figDir = sprintf('%s/figures/%s', dataDir, analStr);
 behavDir = sprintf('%s/Behavior/%s/analysis', exptDir(1:end-4), sessionDir);
+stimDir = sprintf('%s/Behavior/%s/stimuli', exptDir(1:end-4), sessionDir);
 
 % file names
 fileBase = meg_sessionDirToFileBase(sessionDir, expt);
@@ -87,6 +84,18 @@ p = meg_params(sprintf('%s_%s', expt, paramType));
 % behavior
 behav = load(sprintf('%s/%s', behavDir, behavFile.name));
 B = meg_behavior(behav);
+
+% stimuli 
+stimFiles = dir(sprintf('%s/*.*',stimDir));
+stimFiles(2) = []; stimFiles(1) = []; 
+jitSeq = []; 
+for i = 1:numel(stimFiles)
+    stimFileName{i} = fullfile(stimDir,stimFiles(i).name);
+    stimFileName = natsortfiles(stimFileName); 
+    stim = load(stimFileName{i}); 
+    jitSeq = [jitSeq stim.stimulus.jitSeq]; 
+end
+B.jitSeq = jitSeq'; 
 
 %% Make directories
 if ~exist(figDir,'dir')
@@ -118,30 +127,30 @@ fprintf('data read %s \n', getData)
 [data, nTrialsRejected] = meg_rejectTrials(data, dataDir); % NaN manually rejected trials
 fprintf('%d trials rejected \n', nTrialsRejected)
 
-%% flip data based on polarity
+%% flip data based on amplitude at precue 
 
-switch analType
-    case 'ITPC'
-        load('/Users/kantian/Dropbox/Data/TANoise/MEG/Group/mat/channels/TANoise_20Hz_chDir.mat','chDir')
-        chDir = chDir(sessionIdx,:); % resave w sessionDir info so don't need sessionIdx input 
-        
-        for iCh = 1:numel(p.megChannels)
-            vals = [];
-            flip = 1;
-            if chDir(iCh)==-1
-                flip = -1;
-            end
-            vals = data(:,iCh,:);
-            vals = vals.*flip;
-            data(:,iCh,:) = vals;
-        end
-        
-        disp('flipped data based on polarity')
-        
-    otherwise
-        disp('unflipped data')
-        
-end
+% switch analType
+%     case 'ITPC'
+%         load('/Users/kantian/Dropbox/Data/TANoise/MEG/Group/mat/channels/TANoise_20Hz_chDir.mat','chDir')
+%         chDir = chDir(sessionIdx,:); % resave w sessionDir info so don't need sessionIdx input 
+%         
+%         for iCh = 1:numel(p.megChannels)
+%             vals = [];
+%             flip = 1;
+%             if chDir(iCh)==-1
+%                 flip = -1;
+%             end
+%             vals = data(:,iCh,:);
+%             vals = vals.*flip;
+%             data(:,iCh,:) = vals;
+%         end
+%         
+%         disp('flipped data based on polarity')
+%         
+%     otherwise
+%         disp('unflipped data')
+%         
+% end
 
 %% Channel selection
 if loadChannels
@@ -154,6 +163,7 @@ if selectChannels
 else
     selectedChannels = [];
 end
+
 fprintf('channel selection: %s \n', channelSelectionType)
 
 %% Slice data by condition 
@@ -189,9 +199,8 @@ fprintf('sliced data by: %s \n', sliceType)
 
 %% Run analysis
 switch analType
-    case 'none'
-        % just return sliced data or selected channels
-        A = [];
+    case 'none'       
+        A = []; % just return sliced data or selected channels
         
 %     case 'readdata'
 %         %% Read preprocessed sqd
@@ -229,9 +238,16 @@ switch analType
         
     case 'TF'
         %% TF analyses
+        if avgTrial
+            fieldNames = fieldnames(D); Davg = [];
+            for i = 1:numel(fieldNames)
+                Davg.(fieldNames{i})(:,:,1) = nanmean(D.(fieldNames{i}),3);
+            end
+            D = []; D = Davg;
+        end
         [A,fH,figNames] = meg_plotTF(D,p,selectedChannels);
         
-        thresholdFigTFDir = sprintf('%spromAvg/TF',figDir);
+        thresholdFigTFDir = sprintf('%s/TF_singleTrial_condCue',figDir);
         if ~exist(thresholdFigTFDir,'dir')
             mkdir(thresholdFigTFDir)
         end
@@ -240,31 +256,66 @@ switch analType
             rd_saveAllFigs(fH, figNames, sessionDir, thresholdFigTFDir, [])
         end
         if saveAnalysis
-            save(sprintf('%s/TF.mat',matDir),'A','-v7.3')
+            % save(sprintf('%s/TF.mat',matDir),'A','-v7.3')
+            save(sprintf('%s/TFspectrogram_5Ch_avgTrial.mat',matDir),'A','-v7.3')
         end
         
-    case 'ITPC' % phase angle 
-        
-        % average data across trials 
-        fieldNames = fieldnames(D); Davg = []; 
-        for i = 1:numel(fieldNames)
-            Davg.(fieldNames{i})(:,:,1) = nanmean(D.(fieldNames{i}),3);
+    case 'TFwholeTrial'
+        %% TF analyses
+        selectedChannels = channelsRanked(1:5);  
+
+        if avgTrial 
+          fieldNames = fieldnames(D); Davg = [];
+            for i = 1:numel(fieldNames)
+                Davg.(fieldNames{i})(:,:,1) = nanmean(D.(fieldNames{i}),3);
+            end
+            D = []; D = Davg;
         end
-        D = []; D = Davg; 
+        [A,fH,figNames] = meg_plotFFT_wholeTrial(D,p,selectedChannels); 
         
-        selectedChannels = channelsRanked(1:5); 
-        [A,fH,figNames] = meg_plotITPCavg(D,sessionDir,p,selectedChannels,p.ssvefFreq); 
+        % thresholdFigTFDir = sprintf('%s/TF_wholeTrial_5Ch',figDir);
+        % thresholdFigTFDir = sprintf('%s/TF_prePreCue_5Ch',figDir);
+        thresholdFigTFDir = sprintf('%s/TF_5Ch_averageTrial',figDir);
+        if ~exist(thresholdFigTFDir,'dir')
+            mkdir(thresholdFigTFDir)
+        end
         
-        itpcFigDir = sprintf('%s/ITPCAvgTrials',figDir); 
+        if saveFigs
+            rd_saveAllFigs(fH, figNames, sessionDir, thresholdFigTFDir, [])
+        end
+        if saveAnalysis
+            % save(sprintf('%s/TF_wholeTrial.mat',matDir),'A','-v7.3')
+            % save(sprintf('%s/TF_prePreCue.mat',matDir),'A','-v7.3')
+            save(sprintf('%s/TF_preTarget.mat',matDir),'A','-v7.3')
+        end
+        
+    case 'ITPC' 
+        %% time freq and ITPC phase angle 
+        % selectedChannels = p.megChannels; % all channels 
+        % selectedChannels = channelsRanked(1:5); % top 5 channels 
+        if avgTrial
+            % average data across trials
+            fieldNames = fieldnames(D); Davg = [];
+            for i = 1:numel(fieldNames)
+                Davg.(fieldNames{i})(:,:,1) = nanmean(D.(fieldNames{i}),3);
+            end
+            D = []; D = Davg;
+            [A,fH,figNames] = meg_plotITPCavg(D,sessionDir,p,selectedChannels,p.ssvefFreq); 
+        else % single trial 
+            % selectedFreq = p.ssvefFreq; 
+            selectedFreq = 1:50; 
+            [A,fH,figNames] = meg_plotITPC(D,sessionDir,p,selectedChannels,selectedFreq); 
+        end
+        
+        itpcFigDir = sprintf('%s/ITPCspectrogram_singleTrial',figDir); 
         if ~exist(itpcFigDir,'dir')
             mkdir(itpcFigDir)
         end
-        
         if saveFigs
             rd_saveAllFigs(fH, figNames, sessionDir, itpcFigDir, [])
         end
         if saveAnalysis
-            save(sprintf('%s/ITPCavg.mat',matDir),'A','-v7.3')
+            save(sprintf('%s/ITPCspectrogram.mat',matDir),'A','-v7.3')
         end
         
     case 'alpha'
@@ -322,7 +373,6 @@ switch analType
     otherwise
         error('analType not recognized')
 end
-
 fprintf('analysis: %s \n', analType)
 
 end
