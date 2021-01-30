@@ -1,7 +1,11 @@
-function [A, D, selectedChannels, I, B] = meg_runAnalysis(expt, sessionDir, user, sessionIdx)
+function [A, D, selectedChannels, I, B] = meg_runAnalysis(expt, sessionDir, user)
 
 % function [A, D, selectedChannels, I, B] = meg_runAnalysis(exptName, sessionDir, [user])
 %
+% Loads behavioral data, loads MEG data, rejects trials, selects
+% channels, slices MEG data by condition, does analysis (ERF, TF, ITPC,
+% decoding). 
+% 
 % INPUTS
 % exptName
 %   string, 'TA2' or 'TANoise'
@@ -13,15 +17,19 @@ function [A, D, selectedChannels, I, B] = meg_runAnalysis(expt, sessionDir, user
 %   string giving the user name to determine path to data. defaults to
 %   'mcq' = get the data from the mcq server
 %
-% %%% RD: Update documentation about what this function can do
-% setup
-% read data
-% reject trials
-% select channels
-% slicer
-% analysis: ERF
-% analysis: TF
-% analysis: alpha eyes closed
+% OUTPUTS 
+% A 
+%   Analysis structure 
+% D
+%   Data structure sliced by condition
+%   Each field is a condition combination containing a data matrix (time x 
+%   channels x trials) for the trials in that group.
+% I
+%   trial indices for each condition combination
+% B
+%   Structure of behaviorial data (including cued target, cue validity,
+%   response target, target orientation, accuracy, reaction time, target axes
+%   (horizontal/vertical), ITI jitter)
 %
 % Karen Tian
 % January 2020
@@ -42,9 +50,9 @@ analStr = 'ebi'; % 'bietfp'
 preprocStr = 'ebi'; 
 
 paramType = 'ITPCsession8'; % for meg_params 'Preproc', 'Analysis', 'ITPC', 'ITPCsession8" (to correct for the cutoff run)
-analType = 'ITPC'; % 'ITPC'; % 'none','readdata','sortchannels','ERF','TF','decode', 'TFwholeTrial'
+analType = 'none'; % 'ITPC'; % 'none','readdata','sortchannels','ERF','TF','decode', 'TFwholeTrial'
 avgTrial = 0; 
-sliceType = 'cue'; % 'all','cue','cueAcc'
+sliceType = 'cue'; % 'all','cue','cueAcc','ITIjitter','ITICue'
 
 % data
 getData = 'fromSqd'; % 'fromSqd' (read data from sqd), 'fromMat' (load data from prepared .mat) 
@@ -52,7 +60,7 @@ saveData = 0; % save .mat
 
 % channels
 loadChannels = 1;
-channelSelectionType = '20Hz_ebi'; % '20Hz_ebi'; % 'peakprom','classweights','20Hz_ebi'
+channelSelectionType = '20Hz_ebi'; % '20Hz_ebi' (rank by 20Hz power), 'peakprom' (rank by T1 and T2 ERP peak prominence), 'classweights'
 
 selectChannels = 1;
 nChannelsSelected = 5; % number of channels to select from channelsRanked
@@ -88,14 +96,26 @@ B = meg_behavior(behav);
 % stimuli 
 stimFiles = dir(sprintf('%s/*.*',stimDir));
 stimFiles(2) = []; stimFiles(1) = []; 
-jitSeq = []; 
 for i = 1:numel(stimFiles)
-    stimFileName{i} = fullfile(stimDir,stimFiles(i).name);
-    stimFileName = natsortfiles(stimFileName); 
-    stim = load(stimFileName{i}); 
+    stimFileNames{i} = stimFiles(i).name; 
+end
+sortedFiles = natsortfiles(stimFileNames); 
+jitSeq = []; 
+for i = 1:numel(stimFiles) % 1:numel(stimFiles) % for one subject, 2:13
+    % stimFileName{i} = fullfile(stimDir,stimFiles(i).name);
+    % stimFileName = natsortfiles(stimFileName); 
+    stim = load(sprintf('%s/%s',stimDir,sortedFiles{i})); 
     jitSeq = [jitSeq stim.stimulus.jitSeq]; 
 end
-B.jitSeq = jitSeq'; 
+B.jitSeq = jitSeq'; % jitters in s 
+jitters = unique(jitSeq);
+condVal = 1; % replace s with int 
+for i = 1:numel(jitters)
+    B.jitSeqCond(B.jitSeq==jitters(i)) = condVal; 
+    condVal = condVal + 1; 
+end
+B.jitSeqCond = B.jitSeqCond'; 
+B.jitSeqCond(isnan(B.targetPresent)) = NaN;
 
 %% Make directories
 if ~exist(figDir,'dir')
@@ -110,14 +130,14 @@ end
 
 %% Get data (time x ch x trials) 
 switch getData        
-    case 'fromSqd' % Read preprocessed sqd
+    case 'fromSqd' % Read preprocessed sqd using fieldtrip 
         [~, data] = meg_getData(sqdFile,p); % time x channels x trials
         if saveData
             save(dataFile, 'data', '-v7.3')
             save(sprintf('%s/%s_%s_prep_data.mat',prepDir,fileBase,analStr),'prep_data', '-v7.3')
         end
     case 'fromMat'
-        load(dataFile, 'data') % time x ch x trial 
+        load(dataFile, 'data') % Load time x ch x trial mat file 
     otherwise
         data = [];
 end
@@ -128,7 +148,6 @@ fprintf('data read %s \n', getData)
 fprintf('%d trials rejected \n', nTrialsRejected)
 
 %% flip data based on amplitude at precue 
-
 % switch analType
 %     case 'ITPC'
 %         load('/Users/kantian/Dropbox/Data/TANoise/MEG/Group/mat/channels/TANoise_20Hz_chDir.mat','chDir')
@@ -154,6 +173,9 @@ fprintf('%d trials rejected \n', nTrialsRejected)
 
 %% Channel selection
 if loadChannels
+    if strcmp(channelSelectionType,'20Hz_ebi') && strcmp(expt,'TA2')
+        error('For TA2, change channelSelectionType to peakprom') 
+    end
     channelsRanked = meg_loadChannels(matDir, channelSelectionType); 
 end
 
@@ -176,7 +198,6 @@ switch sliceType
     case 'cue'
         cond = B.cuedTarget;
         condNames = {'cueCond'};
-        
         switch expt
             case 'TA2'
                 levelNames = {{'cueT1','cueT2','neutral'}};
@@ -184,12 +205,32 @@ switch sliceType
                 levelNames = {{'cueT1','cueT2'}};
         end
     
-    case 'cueAcc'
+    case 'cueAcc' % cue, accruacy 
         cond = [B.cuedTarget B.acc]; 
         condNames = {'cueCond','acc'}; 
-        levelNames = {{'cueT1','cueT2','cueN'},{'incorrect','correct'}}; 
-        % cond(acc==1) = cond(acc==1)+10; % correct      
+        switch expt 
+            case 'TA2'
+                levelNames = {{'cueT1','cueT2','cueN'},{'incorrect','correct'}}; 
+           case 'TANoise'
+                levelNames = {{'cueT1','cueT2'},{'incorrect','correct'}}; 
+        end 
                
+    case 'ITIjitter'
+        if strcmp(expt,'TA2')
+            error('Slice type ITI jitter for TANoise only. ITI jitter determines onset of 20Hz flicker')
+        end
+        cond = B.jitSeqCond; 
+        condNames = {'ITIjitter'}; 
+        levelNames = {sprintfc('ITI%d',500:200:1500)};
+        
+    case 'ITICue'
+        if strcmp(expt,'TA2')
+            error('Slice type ITI jitter for TANoise only. ITI jitter determines onset of 20Hz flicker')
+        end
+        cond = [B.acc B.jitSeqCond];
+        condNames = {'cueCond','ITIjitter'}; 
+        levelNames = {{'cueT1','cueT2'},sprintfc('ITI%d',500:200:1500)};
+        
     otherwise 
         error('sliceType not recognized')
 end
@@ -202,11 +243,11 @@ switch analType
     case 'none'       
         A = []; % just return sliced data or selected channels
         
-%     case 'readdata'
-%         %% Read preprocessed sqd
-%         [prep_data, data] = meg_getData(sqdFile,p); % time x channels x trials
-%         save (dataFile, 'data', '-v7.3')
-%         save (sprintf('%s/%s_%s_prep_data.mat',prepDir,fileBase,analStr),'prep_data', '-v7.3')
+    case 'readdata'
+        %% Read preprocessed sqd
+        [prep_data, data] = meg_getData(sqdFile,p); % time x channels x trials
+        save (dataFile, 'data', '-v7.3')
+        save (sprintf('%s/%s_%s_prep_data.mat',prepDir,fileBase,analStr),'prep_data', '-v7.3')
         
     case 'sortchannels'
         %% Sort channels
@@ -307,7 +348,7 @@ switch analType
             [A,fH,figNames] = meg_plotITPC(D,sessionDir,p,selectedChannels,selectedFreq); 
         end
         
-        itpcFigDir = sprintf('%s/ITPCspectrogram_singleTrial',figDir); 
+        itpcFigDir = sprintf('%s/ITPCspectrogram_singleTrial_ITICue',figDir); 
         if ~exist(itpcFigDir,'dir')
             mkdir(itpcFigDir)
         end
@@ -365,7 +406,7 @@ switch analType
         
         if saveAnalysis
             decodeAnalStr = A(1).(condNames{1}).decodingOps.analStr;
-%             save(sprintf('%s/%s_%s_%sSlice_%s.mat', matDir, analysisName, analStr, sliceType, decodeAnalStr), 'A', 'targetNames')
+            save(sprintf('%s/%s_%s_%sSlice_%s.mat', matDir, analysisName, analStr, sliceType, decodeAnalStr), 'A', 'targetNames')
 %             save(sprintf('%s/%s_%s_%sSlice_%s_varyNChannels10-157_sortedBy20Hz.mat', matDir, analysisName, analStr, sliceType, decodeAnalStr), 'allA', 'targetNames', 'nTopCh')
             save(sprintf('%s/%s_%s_%sSlice_%s_nCh%d.mat', matDir, analysisName, analStr, sliceType, decodeAnalStr, nTopCh(i)), 'A', 'targetNames')
         end
