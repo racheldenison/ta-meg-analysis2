@@ -24,7 +24,6 @@ function [A,fH,figNames] = meg_plotTF(data,p,selectedChannels,selectedFreq)
 % January 2020
 
 %% args
-
 if nargin<4
     selectedFreq = 8:14;
     disp('selectedFreqs not specified, default 8-14 Hz (alpha band (Foxe 2011))')
@@ -43,14 +42,12 @@ if nargin<1
 end
 
 %% setup
-
 condNames = fieldnames(data);
 nConds = numel(condNames);
 nChannels = numel(selectedChannels);
 nFreqs = numel(selectedFreq); 
 
 %% checks
-
 % check data
 sz = size(data.(condNames{1}));
 if numel(sz)<2 || numel(sz)>3
@@ -68,12 +65,11 @@ if ~isnumeric(selectedChannels)
 end
 
 %% params 
-
 % timing 
 t = p.tstart:p.tstop;
 
 taper          = 'hanning';
-foi            = 1:100;
+foi            = 1:50;
 t_ftimwin      = 10 ./ foi;
 toi            = p.tstart/1000:0.01:p.tstop/1000;
 tfAmps = [];
@@ -94,7 +90,6 @@ cueColors = [122/255 142/255 194/255; 225/255 124/255 96/255; 128/255 128/255 12
 colorAlpha = 0.75; % transparency for plots 
 
 %% time freq analysis
-
 for iC = 1:nConds
     cond = condNames{iC}; 
     
@@ -105,6 +100,8 @@ for iC = 1:nConds
     
     % fieldtrip wavelet convolution
     meanSpectrumAll = []; 
+    spectrumTrials = []; 
+    count = 1; 
     for iCh = selectedChannels
         vals = squeeze(data.(cond)(:,iCh,:))'; % trials by samples
         % valspad = padarray(vals,[0 5*p.fSample-nSamples],'post'); % pad
@@ -112,12 +109,15 @@ for iC = 1:nConds
         [spectrum,ntaper,freqoi,timeoi] = ft_specest_mtmconvol(vals, t/1000, ...
             'timeoi', toi, 'freqoi', foi, 'timwin', t_ftimwin, ...
             'taper', taper, 'dimord', 'chan_time_freqtap');
+        spectrumTrials(:,:,:,count) = spectrum; % trials x time (10ms) x freq x ch
+        count = count+1; 
         meanSpectrum = squeeze(nanmean(abs(spectrum),1)); % t x f for one channel 
         meanSpectrumAll = cat(3,meanSpectrumAll,meanSpectrum); % t x f x channel spectrum 
     end
     
-    tfAmps = permute(meanSpectrumAll,[3,2,1]); % foi x time
+    tfAmps = permute(meanSpectrumAll,[3,2,1]); % ch x foi x time
     meanTfAmps = squeeze(nanmean(tfAmps,1)); 
+
     tfPows = tfAmps.^2; 
     meanTfPows = meanTfAmps.^2; 
     
@@ -128,6 +128,9 @@ for iC = 1:nConds
     normPows = meanTfPows./meanMeanPows-1;
     
     % store variables
+    A.(cond).taper = 'hanning';
+    A.(cond).foi = 1:50;
+    A.(cond).nTrials = nTrials; 
     A.(cond).y = y; 
     A.(cond).f = f; 
     A.(cond).amps = amps; 
@@ -141,8 +144,18 @@ for iC = 1:nConds
     A.(cond).selectedChannels = selectedChannels; 
 end
 
-%% spectrogram plot 
+%% single trial spectrogram (20Hz) 
+spectrumTrials_20 = abs(spectrumTrials(:,:,p.ssvefFreq,:));
+spectrumTrials_20_avgCh = mean(spectrumTrials_20,4); 
+powTrials = spectrumTrials_20_avgCh.^2; 
 
+figure
+imagesc(powTrials)
+meg_figureStyle
+ylabel('Time')
+xlabel('Trial')
+
+%% spectrogram plot 
 figure
 for iC = 1:nConds
     cond = condNames{iC};
@@ -166,7 +179,6 @@ for iC = 1:nConds
 end
 
 %% normalized spectrogram plot 
-
 figure
 set(gcf, 'Position',  [100, 100, 300*ceil(nConds/4), 300*ceil(nConds/4)])
 for iC = 1:nConds
@@ -192,7 +204,6 @@ for iC = 1:nConds
 end
 
 %% fourier plot
-
 figure
 for iC = 1:nConds
     cond = condNames{iC};
@@ -209,7 +220,6 @@ for iC = 1:nConds
 end
 
 %% fourier plot average
-
 figure
 set(gcf, 'Position',  [100, 100, 800, 300])
 for iC = 1:nConds
@@ -226,7 +236,6 @@ for iC = 1:nConds
 end
 
 %% plot selected frequency range for all conditions
-
 figure
 hold on
 for iC = 1:nConds
@@ -262,8 +271,7 @@ title(sprintf('Frequency %d - %d (Hz)',selectedFreq(1),selectedFreq(end)))
 % title('cue T2 - cue T1 (power, norm)')
 
 %% return figure handle
-
 fH = sort(double(findobj(0,'Type','figure')));
 % figNames = {'TF','TFnorm','FFTAllCh','FFTSelectCh','Freq','TF_diffT2T1'}; 
-figNames = {'TF','TFnorm','FFTAllCh','FFTSelectCh','Freq'}; 
+figNames = {'SingleTrial','TF','TFnorm','FFTAllCh','FFTSelectCh','Freq'}; 
 

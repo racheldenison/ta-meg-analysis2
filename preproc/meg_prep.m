@@ -11,7 +11,7 @@ eyeChannels = 177:178;
 photodiodeChannel = 192;
 
 %% setup paths 
-exptDir = pathToTA2('MEG');
+exptDir = meg_pathToTA2('MEG');
 % exptDir = '/Local/Users/denison/Data/TA2/MEG';
 % exptDir = '/Local/Users/denison/Data/TANoise/MEG';
 % exptDir = '/Local/Users/denison/Data/TAContrast/MEG';

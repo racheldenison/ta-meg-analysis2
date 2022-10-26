@@ -1,4 +1,4 @@
-function [fH,figNames,Pk] = meg_channelsPeakSort(sessionDir,data,nChOI)
+function [fH,figNames,Pk] = meg_channelsPeakSort(sessionDir,data,nChOI,p,passCh)
 
 % MEG_SELECTCHANNELS(sessionDir)
 %
@@ -26,11 +26,13 @@ end
 
 %% setup
 
-% sessionDir = 'R0817_20190625';
-exptShortName = 'TANoise';
-analStr = 'bietfp';
+% sessionDir = 'R0817_20190625'; % TA2 
+% sessionDir = 'R0817_20171212'; % TANoise
 
-exptDir = '/Users/kantian/Dropbox/Data/TA2/MEG'; 
+exptShortName = 'TANoise';
+analStr = 'ebi'; % 'bietfp'
+
+exptDir = sprintf('/Users/kantian/Dropbox/Data/%s/MEG',exptShortName);
 
 fileBase = sessionDirToFileBase(sessionDir, exptShortName);
 
@@ -39,22 +41,30 @@ matDir = sprintf('%s/mat', dataDir);
 preprocDir = sprintf('%s/preproc', dataDir);
 
 filename = sprintf('%s/%s_%s.sqd', preprocDir, fileBase, analStr); % *run file* 
-figDir = sprintf('%s/figures/%s', dataDir);
+dataFile = sprintf('%s/%s_%s_data.mat', matDir, fileBase, analStr);
+figDir = sprintf('%s/figures/Channels20Hz', dataDir);
+
+if ~exist(figDir,'dir')
+    mkdir(figDir)
+end
 
 %% data info
 
+% load(dataFile, 'data')
 sz = size(data); 
+
 nT = sz(1); 
 nCh = sz(2); 
-nTrial = sz(3); 
-vals = nanmean(data,3); % avg across trial 
+% nTrial = sz(3); 
+% vals = nanmean(data,3); % avg across trial 
+vals = data; 
 absVals = abs(vals);
 
 % how many channels to select 
 percentileCh = (nChOI/nCh)*100; 
 thresholdPrctile = 100-percentileCh; % 96.8153% for 5 channels
 
-p = meg_params(sprintf('%s_Analysis',exptShortName)); 
+% p = meg_params(sprintf('%s_Analysis',exptShortName)); 
 t = p.tstart:p.tstop;
 xlims = [min(t),max(t)]; % epoch time in ms
 
@@ -177,7 +187,8 @@ switch selectionMethod
    
     % sort dirProm
     [sortGrandProm, idxDirProm] = sort(Pk.grandPromAvg,'descend'); 
-    passCh = idxDirProm(1:nChOI); 
+    % passCh = idxDirProm(1:nChOI); overriding for TANoise 20Hz!!! BUT
+    % uncomment otherwise
     
     %% figure: avg ERF per channel, PosNeg peaks T1/T2, toi1/toi2, passCh
     % subplot sizing
@@ -247,8 +258,8 @@ switch selectionMethod
         xlim(xlims)
         vline(p.eventTimes,'k',p.eventNames)
         yline(0,'--');
-        title(sprintf('channel %d, dir %d',iC,Pk.promDir(iPassCh)))
-        rd_supertitle2(sprintf('%s: pass channels [%s]', selectionMethod, num2str(passCh'))) 
+        title(sprintf('channel %d, dir %d',iPassCh,Pk.promDir(iPassCh)))
+        rd_supertitle2(sprintf('%s: pass channels [%s]', selectionMethod, num2str(passCh))) 
     end
     
     %% figure: scatterplot prom and peak 
@@ -440,11 +451,11 @@ figNames = {'ERF_Peak1','ERF_Peak2','ERF_Peak3','ERF_Peak4','ERF_Peak5','ERF_Pea
 
 % figNames = {'TopChannels_Alpha'};
 % figNames = {'ERFPeaks1','ERFPeaks2','ERFPeaks3','ERFPeaks4','ERFPeaks5','TopoERF'}
-% rd_saveAllFigs(fH, figNames, sessionDir, figDir, [])
+rd_saveAllFigs(fH, figNames, sessionDir, figDir, [])
 
 %% save info 
 
-% save(sprintf('%s/Pk.mat',matDir),'Pk')
+save(sprintf('%s/Pk.mat',matDir),'Pk')
 % save(sprintf('%s/C.mat',matDir),'C')
 
 % if selectThreshold

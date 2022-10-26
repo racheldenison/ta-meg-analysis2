@@ -26,7 +26,7 @@ p = meg_params(sprintf('%s_Analysis',expt));
 %% make groupDAll(session).D (data)...I (index)...B (behav) 
 groupDAll = []; 
 for i = 1:numel(sessionNames)
-    [~, D, ~, I, B] = meg_runAnalysis(expt, sessionNames{i}, user); 
+    [A, D, selectedChannels, I, B] = meg_runAnalysis(expt, sessionNames{i}, user); 
     disp(sessionNames{i})
     % make group 
     groupDAll(i).slice = 'cue'; 
@@ -36,7 +36,6 @@ for i = 1:numel(sessionNames)
 end
 
 %% make groupD.field(time x ch x session) 
-
 fields = fieldnames(D); 
 groupD = []; 
 for i = 1:numel(sessionNames)
@@ -47,7 +46,6 @@ for i = 1:numel(sessionNames)
 end
 
 %% make groupB.(target).(cue)
-
 groupB = [];
 for i = 1:numel(sessionNames)
     for iT = 1:numel(targets)
@@ -97,7 +95,6 @@ for i = 1:numel(sessionNames)
 end
 
 %% avg behavior sessions to subjects
-
 for iT = 1:numel(targets)
     for iF = 1:numel(fields)
         countSubject = 1;
@@ -154,7 +151,6 @@ for iT = 1:numel(targets)
 end
 
 %% plot dprime 
-
 figure
 hold on 
 set(gcf,'Position',[100 100 200 400]) 
@@ -177,13 +173,12 @@ xlim([0 3])
 xticks([1 2])
 xticklabels({'T1' 'T2'})
 ylim([0 2.5])
-ylabel('sensitivity (d'')') 
+ylabel('Sensitivity (d'')') 
 if saveFigs
     saveas(gcf,[expt,'_cue_dprime.svg'])
 end
 
 %% plot rt
-
 figure
 hold on 
 set(gcf,'Position',[100 100 200 400]) 
@@ -213,7 +208,6 @@ if saveFigs
 end
 
 %% plot accuracy 
-
 figure
 hold on 
 set(gcf,'Position',[100 100 200 400]) 
@@ -243,7 +237,6 @@ if saveFigs
 end
 
 %% plot dprime x axis 
-
 if plotAxis
     figure
     hold on
@@ -285,7 +278,6 @@ if plotAxis
 end
 
 %% plot rt x axis 
-
 if plotAxis
     figure
     hold on
@@ -369,7 +361,6 @@ if plotAxis
 end
 
 %% plot dprime sessions
-
 figure
 hold on 
 set(gcf,'Position',[100 100 200 400]) 
@@ -400,7 +391,6 @@ if saveFigs
 end
 
 %% plot dprime by upper downer 
-
 variableOI = 'subjectRT'; % 'subjectDprime' 'subjectAcc'
 subjectOI = downers; 
 subjectType = 'downers'; 

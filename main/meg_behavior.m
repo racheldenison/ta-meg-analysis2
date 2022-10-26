@@ -34,7 +34,7 @@ cuedTarget(cueCond==2 | cueCond==3) = 1; % '1-1','1-2' cue T1
 cuedTarget(cueCond==4 | cueCond==5) = 2; % '2-1','2-2' cue T2
 cuedTarget(cueCond==6 | cueCond==7) = 3; % '3-1','3-2' cue neutral
 
-%% cue type (valid, invalid)
+%% validity type (valid, invalid)
 cueValidity = nan(nTrials,1);
 cueValidity(cueCond==2 | cueCond==5) = 1; % '1-1','2-2' valid
 cueValidity(cueCond==3 | cueCond==4) = -1; % '1-2','2-1' invalid

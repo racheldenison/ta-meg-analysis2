@@ -1,4 +1,4 @@
-function [amps,freqs] = meg_FFTparams(data,Fs,df)
+function [p] = meg_FFTparams(data,Fs,df)
 
 % MEG_PLOTTF(data,p,selectedChannels,selectedFreq)
 % computes fft based on desired frequency resolution and sampling rate 
@@ -14,12 +14,11 @@ function [amps,freqs] = meg_FFTparams(data,Fs,df)
 % selectedFreq  
 %   vector of frequencies of interest
 % OUPUT
-% frequencies
-%   0:df:df*(N/2)
-% fH
-%   figure handle
-% figNames 
-%   figure names 
+% p
+%   structure with fft parameters, including: 
+%       frequencies
+%           0:df:df*(N/2)
+%       Fs, df, nfft, nSamples 
 %
 % Karen Tian
 % December 2020 
@@ -32,13 +31,16 @@ nfft = Fs/df;
 
 freqs = 0:df:df*(nfft/2); 
     
-y = fft(data,nfft)/nSamples; % freq x trial
-amps = 2*abs(y(1:nfft/2+1)); % amp of freq
+% y = fft(data,nfft)/nSamples; % freq x trial
+% amps = 2*abs(y(1:nfft/2+1)); % amp of freq
 
+p.nSamples = nSamples; 
+p.Fs = Fs; 
+p.df = df; 
+p.nfft = nfft; 
+p.freqs = freqs; 
 
-fH = sort(double(findobj(0,'Type','figure')));
-% figNames = {'TF','TFnorm','FFTAllCh','FFTSelectCh','Freq','TF_diffT2T1'}; 
-figNames = {'TF','TFnorm','FFTAllCh','FFTSelectCh','Freq'}; 
+disp(p)
 
 
 

@@ -29,7 +29,12 @@ data = sqdread(eyesClosedFile); % read data
 p = meg_params('TANoise_Analysis'); % get parameters 
 data = data(:,p.megChannels); % read only meg data
 
-%% params 
+%% setup
+idx = 5000:14999; % take middle chunk of data 
+data = data(idx,:); 
+nSamples = size(data,1); 
+nfft = 1000; 
+
 % timing 
 sz = size(data);
 t = 1:sz(1); 
@@ -50,16 +55,17 @@ xlims = [size(toi,1),size(toi,2)];
 
 load('data_hdr.mat')
 
-nSamples = t(end); 
-nfft = 2^nextpow2(nSamples);
+% nSamples = t(end); 
+% nfft = 2^nextpow2(t(end));
+% nfft = 50; 
 
-%% time freq analysis
+%% fft
 y = fft(data,nfft)/nSamples; % freq x trial
 f = p.fSample/2*linspace(0,1,nfft/2+1); % frequencies
 amps = 2*abs(y(1:nfft/2+1,:,:)); % amp of freq x trial
 ampsMean = nanmean(amps,3);
 
-% fieldtrip wavelet convolution
+%% fieldtrip wavelet convolution time freq analysis 
 meanSpectrumAll = [];
 for iCh = p.megChannels
     vals = squeeze(data(:,iCh))'; % channels by samples
@@ -149,11 +155,27 @@ for iCh = 1:size(A.ampsMean,2) % for each channel, find max and max index
     [peak(iCh),peakIdx(iCh)] = max(A.ampsMean(windowIdx,iCh));
 end
 
+% do a mov mean? to smooth fft and reduce frequencies?
+% f10 = movmean(A.f,10); 
+% windowIdx = find(f10>window(1) & f10<window(end));
+% 
+% for iCh = 1:size(A.ampsMean,2) % for each channel, find max and max index 
+%     [peak(iCh),peakIdx(iCh)] = max(A.ampsMean(windowIdx,iCh));
+% end
+
+for iCh = 1:size(A.ampsMean,2) % for each channel, find max and max index 
+    [peak(iCh),peakIdx(iCh)] = max(A.ampsMean(windowIdx,iCh));
+end
+
 A.fftChAlpha = A.f(peakIdx)+window(1); % store 
+
+% fDownsample = movmean(A.f,1000); 
+% ampsDownsample = movmean(A.ampsMean,1000); 
 
 figure
 set(gcf, 'Position',  [100, 100, 800, 300])
-loglog(A.f, A.ampsMean)
+loglog(A.f', A.ampsMean)
+% loglog(fDownsample, ampsDownsample)
 hold on
 xlim([A.f(1) A.f(end)])
 title('fft')
@@ -178,19 +200,21 @@ edges = window(1):0.25:window(end);
 % figure % beeswarm plot 
 % beeswarm(valsPeaks',yVals,'sort_style','up','corral_style','random','dot_size',3,'overlay_style','ci');
 
+A.fftChAlphaAvg = nanmean(A.fftChAlpha); 
 figure
 histogram('BinEdges',edgesPeak,'BinCounts',Npeaks)
-title('Single channel fft peaks distribution') 
+title(sprintf('%s single ch fft peaks distribution, avg = %.2f Hz',und2space(sessionDir),A.fftChAlphaAvg))
 ylabel('Count (number of channels)')
 xlabel('Frequency (0.25Hz bins)')
 set(gca,'TickDir','out');
+vline(A.fftChAlphaAvg,':k')
 ax = gca;
 ax.LineWidth = 1.5;
 ax.XColor = 'black';
 ax.YColor = 'black';
 ax.FontSize = 12;
 box off
-set(gca,'TitleFontSizeMultiplier',1.5)
+set(gca,'TitleFontSizeMultiplier',1.25)
 
 %% topo of channel peak alpha
 figure
@@ -232,12 +256,20 @@ title(sprintf('%s peak alpha power per channel, 8-14 Hz',und2space(sessionDir)))
 % title(sprintf('%s alpha power, 8-14 Hz',und2space(sessionDir)))
 % % title(sprintf('%s alpha power, %d ± 2Hz',und2space(sessionDir),A.tfAlpha))
 
-%% topo of tf within alpha range 
+%% topo of tf within alpha range variable color bar 
 vals = A.chTfPows(:,window); % isolate tfpows in alpha window 
 vals = nanmean(vals,2); % average across alpha window 
 figure
 meg_topoplot(vals)
-% caxis([window(1) window(end)])
+colorbar
+title(sprintf('%s alpha power, 8-14 Hz',und2space(sessionDir)))
+
+%% topo of tf within alpha range, fixed color bar
+vals = A.chTfPows(:,window); % isolate tfpows in alpha window 
+vals = nanmean(vals,2); % average across alpha window 
+figure
+meg_topoplot(vals)
+caxis([0 80])
 colorbar
 title(sprintf('%s alpha power, 8-14 Hz',und2space(sessionDir)))
 
@@ -252,7 +284,7 @@ A.alphaRanked = valsSort;
 %% return figure handle
 
 fH = sort(double(findobj(0,'Type','figure')));
-figNames = {'tf_EyesClosed','tf_Alpha','tf_Alpha_singleCh','fftAlpha_EyesClosed','fftAlpha_EyesClosed_singleCh','fftApha_Histogram','topoAlphaPower_singleChannel','topoAlphaPower'}; 
+figNames = {'tf_EyesClosed','tf_Alpha','tf_Alpha_singleCh','fftAlpha_EyesClosed','fftAlpha_EyesClosed_singleCh','fftApha_Histogram','topoAlphaPower_singleChannel','topoAlphaPower_variableCAxis','topoAlphaPower_fixedCAxis'}; 
 
 end
 

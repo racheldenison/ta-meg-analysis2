@@ -113,7 +113,7 @@ for iC = 1:numel(condNames)
         
         meanSpectrumAll = [];
         vals = []; 
-        vals = data.(condNames{iC})(:,selectedChannels,:)'; % channels by time
+        vals = squeeze(data.(condNames{iC})(:,selectedChannels,:))'; % channels by time
         [spectrum,freqoi,timeoi] = ft_specest_wavelet(vals, t/1000, ...
             'freqoi', foi, 'width', width);
         meanSpectrum = squeeze(nanmean(abs(spectrum),1)); % foi x toi avg channels 
@@ -134,95 +134,95 @@ end
 
 %% plot time series check 
 
-figure
-set(gcf, 'Position',  [100, 100, 800, 300])
-hold on 
-for iC = 1:nConds
-    vals = []; 
-    vals = data.(condNames{iC})(:,selectedChannels); 
-    plot(t,vals,'Color',p.cueColors(iC,:),'LineWidth',2)
-end
-vline(p.eventTimes,':k')
-set(gca,'TickDir','out');
-ax = gca;
-ax.LineWidth = 1.5;
-ax.XColor = 'black';
-ax.YColor = 'black';
-ax.FontSize = 12;
-xlim([p.eventTimes(1)-100,p.eventTimes(3)+100])
-ylabel('Amplitude (T)')
-xlabel('Time (ms)')
-title(sprintf('%s Channels %s',und2space(sessionDir),num2str(selectedChannels(1:nChannels))))
-
-%% plot avg channel power 
-
-figure
-set(gcf, 'Position',  [100, 100, 800, 300])
-hold on 
-for iC = 1:nConds
-    errBar = shadedErrorBar(t,nanmean(A.(condNames{iC}).tfPows,2),nanstd(A.(condNames{iC}).tfPows,[],2)/sqrt(nChannels));
-    errBar.patch.FaceColor = p.cueColors(iC,:); 
-    errBar.edge(1).Color = p.cueColors(iC,:);
-    errBar.edge(2).Color = p.cueColors(iC,:);
-    plot(t,nanmean(A.(condNames{iC}).tfPows,2),'Color',p.cueColors(iC,:),'LineWidth',2)
-end
-vline(p.eventTimes,':k')
-set(gca,'TickDir','out');
-ax = gca;
-ax.LineWidth = 1.5;
-ax.XColor = 'black';
-ax.YColor = 'black';
-ax.FontSize = 12;
-ylabel('Single Channel 20 Hz Power (T^2)')
-xlabel('Time (ms)')
-title(sprintf('%s Channels %s',und2space(sessionDir),num2str(selectedChannels(1:nChannels))))
-
-%% plot ITPC 
-
-figure
-set(gcf, 'Position',  [100, 100, 800, 300])
-hold on 
-for iC = 1:nConds
-    errBar = shadedErrorBar(t,A.(condNames{iC}).ITPCMean,nanstd(A.(condNames{iC}).ITPC,[],2)/sqrt(nChannels));
-    errBar.patch.FaceColor = p.cueColors(iC,:); 
-    errBar.edge(1).Color = p.cueColors(iC,:);
-    errBar.edge(2).Color = p.cueColors(iC,:);
-    plot(t,A.(condNames{iC}).ITPCMean,'Color',p.cueColors(iC,:),'LineWidth',2)
-end
-vline(p.eventTimes,':k')
-set(gca,'TickDir','out');
-ax = gca;
-ax.LineWidth = 1.5;
-ax.XColor = 'black';
-ax.YColor = 'black';
-ax.FontSize = 12;
-ylabel('ITPC')
-xlabel('Time (ms)')
-title(sprintf('%s Channels %s',und2space(sessionDir),num2str(selectedChannels(1:nChannels))))
-
-%% ITPC phase angle at T1 (average trials per channel)
-
-figure
-set(gcf, 'Position',  [100, 100, 300, 400])
-for iC = 1:nConds
-    theta = A.(condNames{iC}).phaseAngle(p.eventTimes(2)+abs(p.tstart),:)';
-    for i = 1:nChannels
-        pp = polarplot([theta(i),theta(i)],[0,1],'Color',p.cueColors(iC,:),'LineWidth',0.5);
-        pp.Color(4) = 0.5; 
-        hold on
-    end
-    pp = polarplot([circ_mean(theta,[],1),circ_mean(theta,[],1)],[0,1],'Color',p.cueColors(iC,:),'LineWidth',5);
-    pp.Color(4) = 0.7; 
-end
-grid off 
-ppAx = gca;
-ppAx.RColor = [0 0 0];
-ppAx.LineWidth = 1; 
-% ppAx.ThetaTick = 0:30:330; 
-% ppAx.ThetaTick = []; 
-ppAx.RTick = [0,1];
-rlim([0,1])
-title(sprintf('Phase Angle at T1 \n %s \n Channels %s',und2space(sessionDir),num2str(selectedChannels(1:nChannels))))
+% figure
+% set(gcf, 'Position',  [100, 100, 800, 300])
+% hold on 
+% for iC = 1:nConds
+%     vals = []; 
+%     vals = data.(condNames{iC})(:,selectedChannels); 
+%     plot(t,vals,'Color',p.cueColors(iC,:),'LineWidth',2)
+% end
+% vline(p.eventTimes,':k')
+% set(gca,'TickDir','out');
+% ax = gca;
+% ax.LineWidth = 1.5;
+% ax.XColor = 'black';
+% ax.YColor = 'black';
+% ax.FontSize = 12;
+% xlim([p.eventTimes(1)-100,p.eventTimes(3)+100])
+% ylabel('Amplitude (T)')
+% xlabel('Time (ms)')
+% title(sprintf('%s Channels %s',und2space(sessionDir),num2str(selectedChannels(1:nChannels))))
+% 
+% %% plot avg channel power 
+% 
+% figure
+% set(gcf, 'Position',  [100, 100, 800, 300])
+% hold on 
+% for iC = 1:nConds
+% %     errBar = shadedErrorBar(t,nanmean(A.(condNames{iC}).tfPows,2),nanstd(A.(condNames{iC}).tfPows,[],2)/sqrt(nChannels));
+% %     errBar.patch.FaceColor = p.cueColors(iC,:); 
+% %     errBar.edge(1).Color = p.cueColors(iC,:);
+% %     errBar.edge(2).Color = p.cueColors(iC,:);
+%     plot(t,nanmean(A.(condNames{iC}).tfPows,2),'Color',p.cueColors(iC,:),'LineWidth',3)
+% end
+% vline(p.eventTimes,':k')
+% set(gca,'TickDir','out');
+% ax = gca;
+% ax.LineWidth = 1.5;
+% ax.XColor = 'black';
+% ax.YColor = 'black';
+% ax.FontSize = 12;
+% ylabel('Trial Average 20 Hz Power (T^2)')
+% xlabel('Time (ms)')
+% title(sprintf('%s Channels %s',und2space(sessionDir),num2str(selectedChannels(1:nChannels))))
+% 
+% %% plot ITPC 
+% 
+% figure
+% set(gcf, 'Position',  [100, 100, 800, 300])
+% hold on 
+% for iC = 1:nConds
+%     errBar = shadedErrorBar(t,A.(condNames{iC}).ITPCMean,nanstd(A.(condNames{iC}).ITPC,[],2)/sqrt(nChannels));
+%     errBar.patch.FaceColor = p.cueColors(iC,:); 
+%     errBar.edge(1).Color = p.cueColors(iC,:);
+%     errBar.edge(2).Color = p.cueColors(iC,:);
+%     plot(t,A.(condNames{iC}).ITPCMean,'Color',p.cueColors(iC,:),'LineWidth',2)
+% end
+% vline(p.eventTimes,':k')
+% set(gca,'TickDir','out');
+% ax = gca;
+% ax.LineWidth = 1.5;
+% ax.XColor = 'black';
+% ax.YColor = 'black';
+% ax.FontSize = 12;
+% ylabel('ITPC')
+% xlabel('Time (ms)')
+% title(sprintf('%s Channels %s',und2space(sessionDir),num2str(selectedChannels(1:nChannels))))
+% 
+% %% ITPC phase angle at T1 (average trials per channel)
+% 
+% figure
+% set(gcf, 'Position',  [100, 100, 300, 400])
+% for iC = 1:nConds
+%     theta = A.(condNames{iC}).phaseAngle(p.eventTimes(2)+abs(p.tstart),:)';
+%     for i = 1:nChannels
+%         pp = polarplot([theta(i),theta(i)],[0,1],'Color',p.cueColors(iC,:),'LineWidth',0.5);
+%         pp.Color(4) = 0.5; 
+%         hold on
+%     end
+%     pp = polarplot([circ_mean(theta,[],1),circ_mean(theta,[],1)],[0,1],'Color',p.cueColors(iC,:),'LineWidth',5);
+%     pp.Color(4) = 0.7; 
+% end
+% grid off 
+% ppAx = gca;
+% ppAx.RColor = [0 0 0];
+% ppAx.LineWidth = 1; 
+% % ppAx.ThetaTick = 0:30:330; 
+% % ppAx.ThetaTick = []; 
+% ppAx.RTick = [0,1];
+% rlim([0,1])
+% title(sprintf('Phase Angle at T1 \n %s \n Channels %s',und2space(sessionDir),num2str(selectedChannels(1:nChannels))))
 
 
 %% return figure handle

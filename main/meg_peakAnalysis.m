@@ -7,7 +7,7 @@ function [D,A] = meg_peakAnalysis(D4,nChOI,groupC,expt,user,slice)
 % April 2020 
 
 % D4 = data structure, fields = slice conditions 
-%   D4.cue (trial x channels x session) 
+%   D4.cue (time? x channels x session) 
 
 % mega group D 
 % load('/Users/kantian/Dropbox/Data/TA2/MEG/Group/mat/groupD.mat') 
@@ -24,6 +24,9 @@ if ~exist('slice','var')
     slice = 'cue'; 
     disp('slice not specified, default by cue')
 end
+% if ~exist('nSubsample','var')
+%     nSubsample = [];
+% end
 
 %% inputs 
 p = meg_params(sprintf('%s_Analysis',expt));
@@ -41,7 +44,7 @@ switch expt
         windowSize = 170;  % 190 TANoise(1)  window length to look for target evoked max 
     case 'TA2'
         windowPostTarget = 100;
-        windowSize = 150;
+        windowSize = 200;
 end
 A.windowPostTarget = windowPostTarget;
 A.windowSize = windowSize; 
@@ -70,7 +73,9 @@ for iF = 1:numel(fields)
         promDir = groupC(iSession).channelDirection(channels);
         D5.session.chPromDir(iSession,:) = promDir; 
         
-        vals = D4.(fields{iF})(:,channels,iSession);
+        %  vals = D4.(fields{iF})(:,nChOI,iSession); % subsampling edit 
+        vals = D4.(fields{iF})(:,channels,iSession); 
+        
         % vals = vals.*promDir'; % flip data direction by direction of peak prominence
         vals = nanmean(vals,2); % average across channels
         

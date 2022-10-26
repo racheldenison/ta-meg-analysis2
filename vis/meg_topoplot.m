@@ -45,6 +45,7 @@ end
 cfg.layout = layout;
 cfg.colormap = cmap;
 cfg.comment = 'no'; % no info about date, time, data range
+cfg.gridscale = 300;
 
 %% data
 data = [];

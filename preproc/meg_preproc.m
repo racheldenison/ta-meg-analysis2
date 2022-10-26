@@ -28,16 +28,16 @@ end
 exptShortName = 'TANoise_Preproc'; % TA2_Preproc, TANoise_Preproc, Cupcake
 p = meg_params(exptShortName); 
 
+environmentalDenoise = 1; % e 
 removeBadChannels = 1; % b dead and outlier sd channels 
-interpolate = 1; % i 
+interpolate = 1; % i interpolate bad channels 
 
-environmentalDenoise = 1; % e
-TSPCA = 0; % t 
+TSPCA = 0; % t time shift pca 
 
-hpfilter = 0; % f 
-components = 0; % c, pca/ica
+hpfilter = 0; % f high pass filter 
 
-rejectPC = 0; % auto reject 1st pc?
+components = 1; % c, pca/ica
+rejectPC = 1; % auto reject 1st pc?
 rejectIC = 0; % auto reject ic?
 
 %%
@@ -345,8 +345,14 @@ if hpfilter
     end
     
     if deleteStepFiles
-        if exist(tspcaFile, 'file')
-            delete(tspcaFile);
+        if TSPCA
+            if exist(tspcaFile, 'file')
+                delete(tspcaFile);
+            end
+        elseif interpolate 
+            if exist(interpFile, 'file')
+                delete(interpFile);
+            end
         end
     end
 

@@ -50,9 +50,9 @@ analStr = 'ebi'; % 'bietfp'
 preprocStr = 'ebi'; 
 
 paramType = 'ITPCsession8'; % for meg_params 'Preproc', 'Analysis', 'ITPC', 'ITPCsession8" (to correct for the cutoff run)
-analType = 'none'; % 'ITPC'; % 'none','readdata','sortchannels','ERF','TF','decode', 'TFwholeTrial'
-avgTrial = 0; 
-sliceType = 'cue'; % 'all','cue','cueAcc','ITIjitter','ITICue'
+analType = 'ITPC'; % 'ITPC'; % 'none','readdata','sortchannels','ERF','TF','decode', 'TFwholeTrial'
+avgTrial = 1; % 0 for single trial, 1 for average trial
+sliceType = 'all'; % 'all','cue','cueAcc','ITIjitter','ITICue'
 
 % data
 getData = 'fromSqd'; % 'fromSqd' (read data from sqd), 'fromMat' (load data from prepared .mat) 
@@ -67,7 +67,7 @@ nChannelsSelected = 5; % number of channels to select from channelsRanked
 
 % saving
 saveAnalysis = 0;
-saveFigs = 1;
+saveFigs = 0;
 
 %% Setup
 % directories
@@ -86,7 +86,7 @@ sqdFile = sprintf('%s/%s_%s.sqd', preprocDir, fileBase, analStr); % *run file*
 dataFile = sprintf('%s/%s_%s_data.mat', matDir, fileBase, analStr);
 behavFile = dir(sprintf('%s/*.mat', behavDir));
 
-% params
+% params 
 p = meg_params(sprintf('%s_%s', expt, paramType));
 
 % behavior
@@ -94,28 +94,28 @@ behav = load(sprintf('%s/%s', behavDir, behavFile.name));
 B = meg_behavior(behav);
 
 % stimuli 
-stimFiles = dir(sprintf('%s/*.*',stimDir));
-stimFiles(2) = []; stimFiles(1) = []; 
-for i = 1:numel(stimFiles)
-    stimFileNames{i} = stimFiles(i).name; 
-end
-sortedFiles = natsortfiles(stimFileNames); 
-jitSeq = []; 
-for i = 1:numel(stimFiles) % 1:numel(stimFiles) % for one subject, 2:13
-    % stimFileName{i} = fullfile(stimDir,stimFiles(i).name);
-    % stimFileName = natsortfiles(stimFileName); 
-    stim = load(sprintf('%s/%s',stimDir,sortedFiles{i})); 
-    jitSeq = [jitSeq stim.stimulus.jitSeq]; 
-end
-B.jitSeq = jitSeq'; % jitters in s 
-jitters = unique(jitSeq);
-condVal = 1; % replace s with int 
-for i = 1:numel(jitters)
-    B.jitSeqCond(B.jitSeq==jitters(i)) = condVal; 
-    condVal = condVal + 1; 
-end
-B.jitSeqCond = B.jitSeqCond'; 
-B.jitSeqCond(isnan(B.targetPresent)) = NaN;
+% stimFiles = dir(sprintf('%s/*.*',stimDir));
+% stimFiles(2) = []; stimFiles(1) = []; 
+% for i = 1:numel(stimFiles)
+%     stimFileNames{i} = stimFiles(i).name; 
+% end
+% sortedFiles = natsortfiles(stimFileNames); 
+% jitSeq = []; 
+% for i = 1:numel(stimFiles) % 1:numel(stimFiles) % for one subject, 2:13
+%     % stimFileName{i} = fullfile(stimDir,stimFiles(i).name);
+%     % stimFileName = natsortfiles(stimFileName); 
+%     stim = load(sprintf('%s/%s',stimDir,sortedFiles{i})); 
+%     jitSeq = [jitSeq stim.stimulus.jitSeq]; 
+% end
+% B.jitSeq = jitSeq'; % jitters in s 
+% jitters = unique(jitSeq);
+% condVal = 1; % replace s with int 
+% for i = 1:numel(jitters)
+%     B.jitSeqCond(B.jitSeq==jitters(i)) = condVal; 
+%     condVal = condVal + 1; 
+% end
+% B.jitSeqCond = B.jitSeqCond'; 
+% B.jitSeqCond(isnan(B.targetPresent)) = NaN;
 
 %% Make directories
 if ~exist(figDir,'dir')
@@ -205,7 +205,7 @@ switch sliceType
                 levelNames = {{'cueT1','cueT2'}};
         end
     
-    case 'cueAcc' % cue, accruacy 
+    case 'cueAcc' % cue, accuracy 
         cond = [B.cuedTarget B.acc]; 
         condNames = {'cueCond','acc'}; 
         switch expt 
@@ -301,21 +301,29 @@ switch analType
             save(sprintf('%s/TFspectrogram_5Ch_avgTrial.mat',matDir),'A','-v7.3')
         end
         
+    case 'TFsingleTrial'
+        %% TF analyses single trial 
+        [A,fH,figNames] = meg_plotTFsingleTrial(D,p,selectedChannels);
+        
+        thresholdFigTFDir = sprintf('%s/TF_singleTrial_condCue',figDir);
+        if ~exist(thresholdFigTFDir,'dir')
+            mkdir(thresholdFigTFDir)
+        end
+        
+        if saveFigs
+            rd_saveAllFigs(fH, figNames, sessionDir, thresholdFigTFDir, [])
+        end
+        if saveAnalysis
+            % save(sprintf('%s/TF.mat',matDir),'A','-v7.3')
+            save(sprintf('%s/TFspectrogram_5Ch_avgTrial.mat',matDir),'A','-v7.3')
+        end
+        
     case 'TFwholeTrial'
         %% TF analyses
         selectedChannels = channelsRanked(1:5);  
-
-        if avgTrial 
-          fieldNames = fieldnames(D); Davg = [];
-            for i = 1:numel(fieldNames)
-                Davg.(fieldNames{i})(:,:,1) = nanmean(D.(fieldNames{i}),3);
-            end
-            D = []; D = Davg;
-        end
+        
         [A,fH,figNames] = meg_plotFFT_wholeTrial(D,p,selectedChannels); 
         
-        % thresholdFigTFDir = sprintf('%s/TF_wholeTrial_5Ch',figDir);
-        % thresholdFigTFDir = sprintf('%s/TF_prePreCue_5Ch',figDir);
         thresholdFigTFDir = sprintf('%s/TF_5Ch_averageTrial',figDir);
         if ~exist(thresholdFigTFDir,'dir')
             mkdir(thresholdFigTFDir)
@@ -325,15 +333,13 @@ switch analType
             rd_saveAllFigs(fH, figNames, sessionDir, thresholdFigTFDir, [])
         end
         if saveAnalysis
-            % save(sprintf('%s/TF_wholeTrial.mat',matDir),'A','-v7.3')
-            % save(sprintf('%s/TF_prePreCue.mat',matDir),'A','-v7.3')
             save(sprintf('%s/TF_preTarget.mat',matDir),'A','-v7.3')
         end
         
     case 'ITPC' 
         %% time freq and ITPC phase angle 
         % selectedChannels = p.megChannels; % all channels 
-        % selectedChannels = channelsRanked(1:5); % top 5 channels 
+        selectedChannels = channelsRanked(1:5); % top 5 channels 
         if avgTrial
             % average data across trials
             fieldNames = fieldnames(D); Davg = [];
@@ -343,12 +349,12 @@ switch analType
             D = []; D = Davg;
             [A,fH,figNames] = meg_plotITPCavg(D,sessionDir,p,selectedChannels,p.ssvefFreq); 
         else % single trial 
-            % selectedFreq = p.ssvefFreq; 
-            selectedFreq = 1:50; 
+            selectedFreq = p.ssvefFreq; 
+            % selectedFreq = 1:50; 
             [A,fH,figNames] = meg_plotITPC(D,sessionDir,p,selectedChannels,selectedFreq); 
         end
         
-        itpcFigDir = sprintf('%s/ITPCspectrogram_singleTrial_ITICue',figDir); 
+        itpcFigDir = sprintf('%s/ITPCspectrogram_singleTrial_allTrials',figDir); 
         if ~exist(itpcFigDir,'dir')
             mkdir(itpcFigDir)
         end
@@ -356,7 +362,7 @@ switch analType
             rd_saveAllFigs(fH, figNames, sessionDir, itpcFigDir, [])
         end
         if saveAnalysis
-            save(sprintf('%s/ITPCspectrogram.mat',matDir),'A','-v7.3')
+            save(sprintf('%s/ITPC_20Hz.mat',matDir),'A','-v7.3')
         end
         
     case 'alpha'

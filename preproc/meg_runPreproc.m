@@ -7,11 +7,11 @@ function meg_runPreproc(sessionDir)
 % exptDir = '/Local/Users/denison/Data/TA2/MEG';
 % exptDir = pathToTA2('MEG');
 % exptDir = '/Users/kantian/Dropbox/Data/TA2/MEG';
-exptDir = '/Users/kantian/Dropbox/Data/TANoise/MEG';
 % exptDir = pathToTANoise('MEG');
+exptDir = '/Users/kantian/Dropbox/Data/TA2/MEG';
 
 % sessionDir = 'R0817_20171213';
-fileBase = sessionDirToFileBase(sessionDir,'TANoise'); 
+fileBase = meg_sessionDirToFileBase(sessionDir,'TA2'); 
 % fileBase = 'R0890_TA2_11.21.18';
 
 % sessionDir = 'R0817_20171213';
@@ -22,7 +22,7 @@ runsToRename = 1:12; %runs
 
 segmentDataFile = false;
 
-preprocStr = 'ebi'; % 'biet_f1Hz_p'; % desired analyses % bie 
+preprocStr = 'ebi2'; % 'biet_f1Hz_p'; % desired analyses % bie 
 
 dataDir = sprintf('%s/%s', exptDir, sessionDir);
 preprocDir = sprintf('%s/preproc_%s', dataDir, preprocStr);
