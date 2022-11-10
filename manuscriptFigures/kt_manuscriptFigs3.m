@@ -78,7 +78,8 @@ xticklabels({'0','500','1000','1500','2000'})
 xlabel('Time (ms)') 
 ylabel('Frequency') 
 c = colorbar;
-caxis([-0.04 0.04])
+caxis([-0.045 0.045])
+c.Ticks = linspace(-0.045,0.045,7);
 c.Box = 'off'; 
 c.Label.String = 'ITPC (A.U.)'; 
 if saveFigs
