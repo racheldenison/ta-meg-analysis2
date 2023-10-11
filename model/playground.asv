@@ -1,0 +1,99 @@
+% playground for testing 
+
+%% --- Generate data ---
+t = 1:1000; 
+Fs = 1000; 
+% --- Data 1 params --- 
+intercept1 
+slope1 = 1; 
+amplitude1 = ; 
+phase1 = ;
+% --- Data 2 params --- 
+dummyData1 = ((slope1*t) + intercept1)  + ( amplitude1 * sin( (freq*pi/(Fs/2)) * (t + phase1 * 100 )) ) 
+dummyData2 = 3*cos(t); 
+
+% --- Add noise ---
+noise1 = (rand(size(dummyData1))-0.5)*10; 
+noise2 = rand(size(dummyData2))-0.5; 
+
+dummyData1 = dummyData1 + noise1; 
+dummyData2 = dummyData2 + noise2; 
+
+%% Plot data 
+figure
+hold on 
+plot(dummyData1)
+plot(dummyData2)
+
+%% Set up model fit
+paramNames = {'amplitude1','amplitude2'};
+nVars = numel(paramNames);
+
+clear mdlFit
+mdlFit.A = []; % equality contraints
+mdlFit.b = []; 
+mdlFit.Aeq = []; % inequality contraitns
+mdlFit.beq = []; 
+
+% === Define upper and lower bounds ===
+idx = find(contains(paramNames,'amplitude1')); 
+lb(idx) = 0; 
+ub(idx) = 10; 
+idx = find(contains(paramNames,'amplitude2')); 
+lb(idx) = 0; 
+ub(idx) = 10; 
+
+mdlFit.lb = lb; 
+mdlFit.ub = ub; 
+
+%% --- Define initial search array --- 
+nGrain = 100; 
+x0s = NaN([nVars,nGrain]);
+for i = 1:nVars
+    if strcmp(paramNames{i},'slope1') || strcmp(paramNames{i},'slope2')
+        x0s(i,:) = linspace(lb(i),0,nGrain); % slope max to 0? 
+    else
+        x0s(i,:) = linspace(lb(i),ub(i),nGrain); % initial coefficients for search
+    end
+end
+
+%% --- Fit model --- 
+clear dataFit fun solution x0
+nPerms = 1; % 100
+for iP = 1:nPerms
+    % --- Randomly pick starting coefficients from search grid ---
+    for iV = 1:nVars
+        vals = randperm(nGrain);
+        idx(iV) = vals(1);
+        x0(iV) = x0s(iV,idx(iV));
+    end
+    fun = @(x)playground_objectiveFunction(x,dummyData1,dummyData2,t,paramNames);
+    % --- Fit ---
+    [solution,fval,exitflag,output] = fmincon(fun, x0, mdlFit.A, mdlFit.b, mdlFit.Aeq, mdlFit.beq, mdlFit.lb, mdlFit.ub);
+end
+
+%% Plot data and model 
+figure 
+hold on 
+figureStyle 
+
+% --- Plot data ---
+plot(t,dummyData1,'LineWidth',1,'Color',p.cueColors(1,:))
+plot(t,dummyData2,'LineWidth',1,'Color',p.cueColors(2,:))
+
+% --- Plot model fit ---
+[E,yhat1,yhat2] = playground_objectiveFunction(solution,dummyData1,dummyData2,t,paramNames);
+plot(t,yhat1,':','LineWidth',2,'Color','b')
+plot(t,yhat2,':','LineWidth',2,'Color','r')
+
+
+
+
+
+
+
+
+
+
+
+

@@ -29,7 +29,7 @@ end
 % end
 
 %% inputs 
-p = meg_params(sprintf('%s_Analysis',expt));
+p = meg_params(sprintf('TANoise_Analysis'));
 
 tIdx = 1:p.trialTime; % epoch time, 1 indexed
 t = p.tstart:p.tstop; % epoch time, relative to precue
@@ -43,15 +43,14 @@ switch expt
         windowPostTarget = 80; % 70 min window post target to start looking for evoked max, 0 if right after target onset 
         windowSize = 170;  % 190 TANoise(1)  window length to look for target evoked max 
     case 'TA2'
-        windowPostTarget = 100;
-        windowSize = 200;
+        windowPostTarget = 50; % 100 
+        windowSize = 250; % 200 
 end
 A.windowPostTarget = windowPostTarget;
 A.windowSize = windowSize; 
 [sessionNames,subjectNames] = meg_sessions(expt); 
 
 %% setup 
-
 plotFigs = 1; 
 exptDir = meg_pathToTAMEG(expt, user);
 figDir = sprintf('%s/Group/figures/%s_max/nCh_%d_%d',exptDir,slice,nChOI(1),nChOI(end)); 
@@ -63,7 +62,6 @@ end
 colors = distinguishable_colors(numel(subjectNames));
 
 %% session structure: D5.cue(time x session) 
-
 D5 = []; vals = []; 
 D5.nChannels = nChOI; 
 for iF = 1:numel(fields)
@@ -102,7 +100,6 @@ for iF = 1:numel(fields)
 end
 
 %% exchange variable names 
-
 D = D5; 
 
 %% setup A structure 
@@ -116,7 +113,6 @@ for iT = 1:numel(targetNames)
 end
 
 %% find max and max idx per target per condition per subject 
-
 for iF = 1:numel(fields) % cue condition
     for iT = 1:numel(targetNames) % target
         for iSubject = 1:numel(subjectNames) % subject
@@ -138,6 +134,22 @@ for iF = 1:numel(fields) % cue condition
     end
 end
 
+targetNames = {'T1','T2'}; 
+for iF = 1:numel(fields) % cue condition
+    for iT = 1:numel(targetNames) % target
+            target = targetNames(iT);
+            idxTargetName = find(strcmp(p.eventNames,target));
+            idxT = find(t==p.eventTimes(idxTargetName));
+            window = idxT+windowPostTarget:idxT+windowSize;
+        for iSession = 1:numel(sessionNames) % subject
+            % by session
+            [M(iSession),I(iSession)] = max(D.session.(fields{iF})(window,iSession));
+            A.(targetNames{iT}).(fields{iF}).maxSession = M;
+            A.(targetNames{iT}).(fields{iF}).maxIdxSession = t(window(I));
+        end
+    end
+end
+
 % compute max and max idx averages and std across subjects 
 for iT = 1:numel(targetNames)
     for iF = 1:numel(fields)
@@ -154,7 +166,6 @@ end
 if plotFigs
     %% fig 1: scatterplot max w v and h error bars
     % find max and max idx per subject, then average
-    
     figure
     set(gcf,'Position',[100 100 1000 400])
     
@@ -165,6 +176,7 @@ if plotFigs
         window = idxT:idxT+windowPostTarget+windowSize;
         
         subplot (1,numel(targetNames),iT)
+        meg_figureStyle
         hold on
         for iF = 1:numel(fields)
             % vertical error bar
@@ -185,17 +197,17 @@ if plotFigs
             p1.MarkerFaceColor = p.cueColors(iF,:);
             p.cueColors(iF,:);
         end
-        ylim([0e-13,2.6e-13])
+        % ylim([0e-13,2.6e-13])
         xlim([t(window(1))-10,t(window(end))])
-        xlabel('time (ms)')
-        ylabel('amp (T)')
+        xlabel('Time (ms)')
+        ylabel('Max amp (T)')
         vline(p.eventTimes(iT+1),'k:','target')
-        title(sprintf('%s max by cue condition (channels = %d:%d)',targetNames{iT},nChOI(1),nChOI(end)))
+        title(sprintf('%s',targetNames{iT}))
     end
+    sgtitle(sprintf('max by cue condition (channels = %d:%d, selection = %s)',nChOI(1),nChOI(end),groupC(1).selectionMethod))
     
     %% fig 2: scatterplot max w v error bars
     % group max 
-    
     figure
     set(gcf,'Position',[100 100 1000 400])
         
@@ -206,6 +218,7 @@ if plotFigs
         window = idxT:idxT+windowPostTarget+windowSize;
         
         subplot (1,numel(targetNames),iT)
+        meg_figureStyle
         hold on
         for iF = 1:numel(fields)
             % vertical error bar
@@ -226,20 +239,21 @@ if plotFigs
             p1.MarkerFaceColor = p.cueColors(iF,:);
             p.cueColors(iF,:);
         end
-        ylim([0e-13,2.6e-13]) % ylim([0.5e-13,2.6e-13])
+        % ylim([0e-13,2.6e-13]) % ylim([0.5e-13,2.6e-13])
         xlim([t(window(1))-10,t(window(end))])
         xlabel('time (ms)')
         ylabel('amp (T)')
         vline(p.eventTimes(iT+1),'k:','target')
-        title(sprintf('%s max by cue condition (channels = %d:%d)',targetNames{iT},nChOI(1),nChOI(end)))
+        title(sprintf('%s',targetNames{iT}))
     end
+    sgtitle(sprintf('max (first average group TS) by cue condition (channels = %d:%d, selection = %s)',nChOI(1),nChOI(end),groupC(1).selectionMethod))
     
     %% fig 3.1: group level plot ERF w max scatter
     % max averaged across subject ERFs 
-    
     p.colorTarget = [0.5 0.5 0.5; 0 0 0];
     
     figure
+    meg_figureStyle
     set(gcf,'Position',[100 100 1200 350])
     hold on
     for iF = numel(fields):-1:1
@@ -274,19 +288,19 @@ if plotFigs
             plot(t(window),zeros(size(window)),'LineWidth',4,'Color',p.colorTarget(iT,:))
         end
     end
-    hline(0,'k--')
+    yline(0,'k--')
     xlim([t(1),t(end)])
     xlabel('time (ms)')
     ylabel('amp (T)')
-    vline(p.eventTimes,'k--',p.eventNames)
+    xline(p.eventTimes,'k--',p.eventNames)
     ax1 = gca; 
-    title(sprintf('group max by target by cue condition (nChannels = %d:%d)',nChOI(1),nChOI(end)))
+    sgtitle(sprintf('group max by target by cue condition (nChannels = %d:%d)',nChOI(1),nChOI(end)))
     
     %% fig 3.2: group level plot ERF 
-    
     p.colorTarget = [0.5 0.5 0.5; 0 0 0];
     
     figure
+    meg_figureStyle
     set(gcf,'Position',[100 100 1200 350])
     hold on
     for iF = numel(fields):-1:1
@@ -321,19 +335,19 @@ if plotFigs
             plot(t(window),zeros(size(window)),'LineWidth',4,'Color',p.colorTarget(iT,:))
         end
     end
-    hline(0,'k--')
+    yline(0,'k--')
     xlim([t(1),t(end)])
     ylim(ax1.YLim); 
     xlabel('time (ms)')
     ylabel('amp (T)')
-    vline(p.eventTimes,'k--',p.eventNames)
+    xline(p.eventTimes,'k--',p.eventNames)
     title(sprintf('group max by target by cue condition (nChannels = %d:%d)',nChOI(1),nChOI(end)))
     
     %% fig 4: subject level plot ERF w max scatter
-    
     p.colorTarget = [0.5 0.5 0.5; 0 0 0];
     
     figure
+    meg_figureStyle
     set(gcf,'Position',[100 100 1400 800])
     for iSubject = 1:numel(subjectNames)
         subplot (5,2,iSubject)
@@ -360,11 +374,11 @@ if plotFigs
                 plot(t(window),zeros(size(window)),'LineWidth',4,'Color',p.colorTarget(iT,:))
             end
         end
-        hline(0,'k--')
+        yline(0,'k--')
         xlim([t(1),t(end)])
         xlabel('time (ms)')
         ylabel('amp (T)')
-        vline(p.eventTimes,'k--',p.eventNames)
+        xline(p.eventTimes,'k--',p.eventNames)
         title(sprintf('%s',subjectNames{iSubject}))
     end
     % rd_supertitle2(sprintf('(nChannels = %d)',nChOI))
@@ -400,9 +414,9 @@ if plotFigs
                 plot(t(window),zeros(size(window)),'LineWidth',4,'Color',p.colorTarget(iT,:))
             end
         end
-        hline(0,'k--')
+        yline(0,'k--')
         xlim([t(1),t(end)])
-        vline(p.eventTimes,'k--')
+        xline(p.eventTimes,'k--')
         title(sprintf('%s',und2space(sessionNames{iSession})))
     end
     xlabel('time (ms)')
@@ -567,52 +581,52 @@ if plotFigs
 %         title(sprintf('%s max idx (nChannels = %d:%d)',targetNames{iT},nChOI(1),nChOI(end)))
 %    end
     
-    %% topo channel(s) selected and prom 
+    %% topo channel(s) selected and prom (fix not working w new fieldtrip) 
     %% session 1
-    figure
-    set(gcf,'Position',[0 0 1600 500])
-    nFig = 1; 
-    for iS = 1:2:numel(sessionNames)
-        subplot(1,numel(subjectNames),nFig)
-        chs = []; vals = []; 
-        
-        chs = groupC(iS).channelsRanked(nChOI); 
-        promDir = groupC(iS).channelDirection(chs); 
-        
-        vals = zeros(157,1); 
-        vals(chs) = promDir; 
-        meg_topoplot(vals)
-        caxis([-1,1])
-        % title(sprintf('%s',und2space(sessionNames{iS})))
-        nFig = nFig + 1; 
-    end
-
-    %% session 2 
-    figure
-    set(gcf,'Position',[0 0 1600 500])
-    nFig = 1; 
-    for iS = 2:2:numel(sessionNames)
-        subplot(1,numel(subjectNames),nFig)
-        chs = []; vals = []; 
-        
-        chs = groupC(iS).channelsRanked(nChOI); 
-        promDir = groupC(iS).channelDirection(chs); 
-        
-        vals = zeros(157,1); 
-        vals(chs) = promDir; 
-        meg_topoplot(vals)
-        caxis([-1,1])
-        % title(sprintf('%s',und2space(sessionNames{iS})))
-        nFig = nFig + 1; 
-    end
+%     figure
+%     set(gcf,'Position',[0 0 1600 500])
+%     nFig = 1; 
+%     for iS = 1:2:numel(sessionNames)
+%         subplot(1,numel(subjectNames),nFig)
+%         hold on 
+%         chs = []; vals = []; 
+%         
+%         chs = groupC(iS).channelsRanked(nChOI); 
+%         promDir = groupC(iS).channelDirection(chs); 
+%         
+%         vals = zeros(157,1); 
+%         vals(chs) = promDir; 
+%         meg_topoplot(vals)
+%         caxis([-1,1])
+%         % title(sprintf('%s',und2space(sessionNames{iS})))
+%         nFig = nFig + 1; 
+%     end
+% 
+%     %% session 2 
+%     figure
+%     set(gcf,'Position',[0 0 1600 500])
+%     nFig = 1; 
+%     for iS = 2:2:numel(sessionNames)
+%         subplot(1,numel(subjectNames),nFig)
+%         chs = []; vals = []; 
+%         
+%         chs = groupC(iS).channelsRanked(nChOI); 
+%         promDir = groupC(iS).channelDirection(chs); 
+%         
+%         vals = zeros(157,1); 
+%         vals(chs) = promDir; 
+%         meg_topoplot(vals)
+%         caxis([-1,1])
+%         % title(sprintf('%s',und2space(sessionNames{iS})))
+%         nFig = nFig + 1; 
+%     end
     
     %% save figs
     fH = sort(double(findobj(0,'Type','figure')));
     rd_saveAllFigs(fH,...
         {'targetMax_subject','targetMax_group','groupERF_subject','groupERF_group','subjectERF','sessionERF',...
-        'scatter_subject_cT1cT2_max',...% 'scatter_subject_cT1cN_max','scatter_subject_cT2cN_max',...
-        'scatter_subject_cT1cT2_maxIdx',...%'scatter_subject_cT1cN_maxIdx','scatter_subject_cT2cN_maxIdx'...
-        'topo_session1','topo_session2'},...
+        'scatter_subject_cT1cT2_max',... % 'scatter_subject_cT1cN_max','scatter_subject_cT2cN_max',...
+        'scatter_subject_cT1cT2_maxIdx'},... %'scatter_subject_cT1cN_maxIdx','scatter_subject_cT2cN_maxIdx'...        % 'topo_session1','topo_session2'},...
         sprintf('ch%d_%d',nChOI(1),nChOI(end)),figDir);
     
     %% save analysis mat 

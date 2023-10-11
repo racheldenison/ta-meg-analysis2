@@ -48,9 +48,9 @@ switch expt
     case 'TA2_Analysis'
         p.eventTimes = [0 1050 1350 2300]; % accounting for 50ms photodiode delay
         p.eventNames = {'precue','T1','T2','response cue'};
-        p.tstart = -500; 
+        p.tstart = -1200; % -500; 
         p.tstop = 3900; 
-        p.prestim = 0.5; 
+        p.prestim = 1.2; 
         p.poststim = 3.9; 
         p.cueColors = [122/255 142/255 194/255; 225/255 124/255 96/255; 128/255 128/255 128/255; 157/255 135/255 212/255];  % cueT1, cueT2, neutral, difference
         p.colorAlpha = 0.75; % transparency for plots 

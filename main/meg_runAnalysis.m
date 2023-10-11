@@ -37,7 +37,7 @@ function [A, D, selectedChannels, I, B] = meg_runAnalysis(expt, sessionDir, user
 %% inputs
 if nargin == 0
     expt = 'TA2'; % 'TANoise'
-    sessionDir = 'R1187_20181119'; % 'R1187_20180105'
+    sessionDir = 'R0817_20181120'; % 'R1187_20180105'
     user = 'karen'; % 'mcq','karen','rachel','karenhd'
 end
 if ~exist('user','var')
@@ -46,21 +46,21 @@ end
 
 %% Settings
 % analysis options
-analStr = 'ebi'; % 'bietfp'
-preprocStr = 'ebi'; 
+analStr = 'bietfp'; % 'bietfp' 'ebi' 
+preprocStr = 'bietfp'; 
 
-paramType = 'ITPCsession8'; % for meg_params 'Preproc', 'Analysis', 'ITPC', 'ITPCsession8" (to correct for the cutoff run)
-analType = 'ITPC'; % 'ITPC'; % 'none','readdata','sortchannels','ERF','TF','decode', 'TFwholeTrial'
+paramType = 'Analysis'; % for meg_params 'Preproc', 'Analysis', 'ITPC', 'ITPCsession8" (to correct for the cutoff run)
+analType = 'readdata'; % 'ITPC'; % 'none','readdata','sortchannels','ERF','TF','decode', 'TFwholeTrial'
 avgTrial = 1; % 0 for single trial, 1 for average trial
-sliceType = 'all'; % 'all','cue','cueAcc','ITIjitter','ITICue'
+sliceType = 'cue'; % 'all','cue','cueAcc','ITIjitter','ITICue'
 
 % data
-getData = 'fromSqd'; % 'fromSqd' (read data from sqd), 'fromMat' (load data from prepared .mat) 
+getData = 'fromMat'; % 'fromSqd' (read data from sqd), 'fromMat' (load data from prepared .mat) 
 saveData = 0; % save .mat 
 
 % channels
 loadChannels = 1;
-channelSelectionType = '20Hz_ebi'; % '20Hz_ebi' (rank by 20Hz power), 'peakprom' (rank by T1 and T2 ERP peak prominence), 'classweights'
+channelSelectionType = 'peakprom'; % '20Hz_ebi' (rank by 20Hz power), 'peakprom' (rank by T1 and T2 ERP peak prominence), 'classweights'
 
 selectChannels = 1;
 nChannelsSelected = 5; % number of channels to select from channelsRanked
@@ -266,7 +266,7 @@ switch analType
         
     case 'ERF'
         %% ERF analyses
-        [A,fH,figNames] = meg_plotERF(D,p,selectedChannels);
+        [A,fH,figNames] = meg_plotERF(D,p,selectedChannels,0,1);
         
         ERFDir = sprintf('%spromAvg/ERF',figDir);
         if ~exist(ERFDir,'dir')

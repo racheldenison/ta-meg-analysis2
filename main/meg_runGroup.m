@@ -7,8 +7,8 @@
 
 %% setup
 user = 'karen'; % 'mcq','karen','rachel'
-expt = 'TANoise'; % ' TANoise'
-sessionIdx = 1:20; 
+expt = 'TA2'; % ' TANoise' 'TA2'
+sessionIdxs = 1:2; 
 p = meg_params('TANoise_ITPCsession8');
 [sessionNames,subjectNames,ITPCsubject,ITPCsession] = meg_sessions(expt); 
 
@@ -23,7 +23,7 @@ clear groupI
 clear groupB
 
 %%
-for i = 1:20 % :20 %20 15:numel(sessionNames) % 8:numel(sessionNames) % 1:numel(sessionNames), skipped 8, cant read sqd?
+for i = sessionIdxs % :20 %20 15:numel(sessionNames) % 8:numel(sessionNames) % 1:numel(sessionNames), skipped 8, cant read sqd?
     sessionDir = sessionNames{i}; 
     disp(sessionDir)
     sessionIdx = i; 

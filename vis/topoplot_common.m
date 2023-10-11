@@ -39,7 +39,7 @@ cfg = ft_checkconfig(cfg, 'unused',     {'cohtargetchannel'});
 cfg = ft_checkconfig(cfg, 'renamed',    {'cohrefchannel' 'refchannel'});
 cfg = ft_checkconfig(cfg, 'renamed',    {'zparam', 'parameter'});
 
-cfg.newfigure = ft_getopt(cfg, 'newfigure', 'yes');
+cfg.newfigure = ft_getopt(cfg, 'newfigure', 'no'); % 'yes' 
 
 Ndata = numel(varargin);
 if isnumeric(varargin{end})

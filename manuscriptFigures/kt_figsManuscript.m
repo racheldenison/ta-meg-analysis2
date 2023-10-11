@@ -6,8 +6,11 @@
 %% settings
 saveFigs = 0; 
 
+%% Paths
+addpath(genpath(pwd))
+
 %% load ITPC data 
-load('/Users/kantian/Dropbox/github/ta-meg-analysis2/main/groupA_ITPCspectrogram_byAtt.mat')
+load('/Users/kantian/Dropbox/github/ta-meg-analysis2/unused/groupA_ITPCspectrogram_byAtt.mat')
 p = meg_params('TANoise_ITPCsession8');
 
 %% Normalized ITPC TS by Cue 
@@ -21,28 +24,59 @@ val_cueT1 = squeeze(A.cueT1.normSubject(foi,:,:));
 val_cueT2 = squeeze(A.cueT2.normSubject(foi,:,:)); 
 val_cueT1(:,downerIdx) = val_cueT1(:,downerIdx)*-1; 
 val_cueT2(:,downerIdx) = val_cueT2(:,downerIdx)*-1; 
-includeIdx = [1,2,3,4,6,7,8,9,10]; 
+includeIdx = [1,2,3,4,6,7,8,9,10]; % 9 subjects 
 
 % --- Figure ---
 figure
 set(gcf,'Position',[100 100 600 400])
 hold on 
-plot(p.t,mean(val_cueT1(:,includeIdx),2),'Color',[p.cueColors(1,:)],'LineWidth',2);
-plot(p.t,mean(val_cueT2(:,includeIdx),2),'Color',[p.cueColors(2,:)],'LineWidth',2); 
+plotErrorBars = 1; 
+sampling = 1:10:7001;
+
+% -- Error Bars --- 
+% Requires https://www.mathworks.com/matlabcentral/fileexchange/26311-raacampbell-shadederrorbar 
+plotErrorBars = 1; 
+errorBarType = 'EB-TS-SED'; % 'EB-TS' 'EB-fit' 'EB-TS-baselineNorm' 'EB-TS-SED'
+if plotErrorBars
+    includeIdx = 1:10;
+    switch errorBarType
+        case 'EB-TS-SED'
+            t = p.t(sampling);
+            sed = vals_cueT1-vals_cueT2;
+            sed = std(sed(:,includeIdx),[],2)/sqrt(numel(includeIdx));
+            % --- Precue T1 ---
+            line_precueT1 = shadedErrorBar(t,mean(val_cueT1(sampling,includeIdx),2), sed(sampling),...
+                'lineProps', {'MarkerFaceColor',p.cueColors(1,:), 'LineWidth', 0.2, 'Color',p.cueColors(1,:)}, 'transparent',1);
+            % --- Precue T2 ---
+            line_precueT2 = shadedErrorBar(t,mean(val_cueT2(sampling,includeIdx),2), sed(sampling),...
+                'lineProps', {'MarkerFaceColor',p.cueColors(2,:), 'LineWidth', 0.2, 'Color',p.cueColors(2,:)}, 'transparent',1);
+    end
+end
+
+% -- Plot data lines --- 
+plot(p.t(sampling),mean(val_cueT1(sampling,includeIdx),2),'Color',[p.cueColors(1,:)],'LineWidth',3);
+plot(p.t(sampling),mean(val_cueT2(sampling,includeIdx),2),'Color',[p.cueColors(2,:)],'LineWidth',3); 
+
+% --- Plot event lines --- 
+for i = 1:numel(p.eventTimes)
+    xline(p.eventTimes(i),'Color',[0.5 0.5 0.5],'LineWidth',1,'LineStyle','-')
+end
+yline(0,'Color',[0.5 0.5 0.5],'LineWidth',1,'LineStyle','-')
 
 % --- Format --- 
-for i = 1:numel(p.eventTimes)
-    xline(p.eventTimes(i),'Color',[0.5 0.5 0.5],'LineWidth',1)
-end
 meg_figureStyle
 xlabel('Time (ms)')
-ylabel('ITPC')
+ylabel('Normalized ITPC')
 xlim([-100 2400])
-ylim([-0.04 0.1])
+if plotErrorBars
+    ylim([-0.07 0.13])
+else
+    ylim([-0.04 0.1])
+end
 
 % --- Save fig --- 
-figTitle = 'temporalExpectation_TS_normalized'; 
 if saveFigs 
+    figTitle = 'ITPC_TS_normalized'; 
     saveas(gcf,sprintf('%s.svg', figTitle)) 
 end
 
@@ -63,7 +97,7 @@ end
 %     xline(t(idxSig(i)),'Color',[0.5 0.5 0.5],'LineWidth',1)
 % end
 
-%% FIG: 20 Hz ITPC whole time series, average across all trials
+%% FIG: 20 Hz ITPC whole time series, average across all trials, temporal expectation fit 
 
 % setup 
 sampling = 1:10:7001;
@@ -80,24 +114,69 @@ toi = toi(1):toi(end)-paddingBefore; % select timing for fit
 % --- All trials --- 
 vals = squeeze(A.all.subject(freq,:,:));  % frequency x time x subject (from avg sessions)
 groupVals = squeeze(mean(vals,2)); % average across subject 
-% do fit 
+% --- Do fit (on subjects, for error bars) ---
+for i = 1:size(vals,2)
+    [c_subs(i).fit, c_subs(i).error] = polyfit(toi,vals(toi,i)',1);
+    [c_subs(i).y1_est, c_subs(i).delta] = polyval(c_subs(i).fit,toi,c_subs(i).error);
+end
+% --- Do fit (on group averaged, for visualization) ---
 [c1,error1] = polyfit(toi,groupVals(toi),1);
 [y1_est,delta1] = polyval(c1,toi,error1);
+% --- Plot fit --- 
 p1_fit = plot(p.t(toi),y1_est,'Color',[0.3 0.3 0.3],'LineWidth',2); 
-% downsample 
-groupVals = groupVals(sampling); 
+% --- Downsample ---
+% groupVals = groupVals(sampling); 
+
+% -- Error Bars (TS) --- 
+plotErrorBars = 1; 
+errorBarType = 'EB-TS-baselineNorm'; % 'EB-TS' 'EB-fit' 'EB-TS-baselineNorm'
+if plotErrorBars
+    includeIdx = 1:10;
+    switch errorBarType
+        case 'EB-TS'
+            t = p.t(sampling);
+            line_allTrials = shadedErrorBar(t, groupVals(sampling), std(vals(sampling,includeIdx),[],2)/sqrt(numel(includeIdx)),...
+                'lineProps', {'MarkerFaceColor','k', 'LineWidth', 0.2, 'Color','k'}, 'transparent',1);
+        case 'EB-TS-baselineNorm'
+            baselineTOI = -200:-1; 
+            baselineTOIIdx = find(p.t==baselineTOI(1)):find(p.t==baselineTOI(end)); 
+            for i = 1:size(vals,2) % average per subject 
+                baselineS(i) = mean(vals(baselineTOIIdx,i),1);
+                normVals(:,i) = vals(:,i)./baselineS(i); 
+            end
+            % sem in units of percent change 
+            sem = std(normVals(sampling,includeIdx),[],2)/sqrt(numel(includeIdx)); 
+            % scale sem back to ITPC units 
+            baselineG = mean(groupVals(baselineTOIIdx)); 
+            semScaled = sem*baselineG; 
+            % Plot 
+            t = p.t(sampling);
+            line_allTrials = shadedErrorBar(t, groupVals(sampling), semScaled,...
+                'lineProps', {'MarkerFaceColor','k', 'LineWidth', 0.2, 'Color','k'}, 'transparent',1);
+        case 'EB-fit'
+            t = p.t(toi); 
+            % Collect subject-level fits into single matrix 
+            for i = 1:numel(c_subs)
+                sub_fits(:,i) = c_subs(i).y1_est; 
+            end
+            line_allTrials = shadedErrorBar(t, y1_est, std(sub_fits(:,includeIdx),[],2)/sqrt(numel(includeIdx)),...
+                'lineProps', {'MarkerFaceColor','k', 'LineWidth', 0.2, 'Color','k'}, 'transparent',1);
+    end
+end
 
 % --- Plot TS ---
 t = p.t(sampling); 
-plot(t, groupVals,'LineWidth',3,'Color',[0.3 0.3 0.3])
-meg_figureStyle
+plot(t, groupVals(sampling),'LineWidth',3,'Color',[0.3 0.3 0.3])
+
+% --- Plot event lines ---
 for i = 1:numel(p.eventTimes)
     xline(p.eventTimes(i),'Color',[0.5 0.5 0.5],'LineWidth',1)
 end
+
+% --- Format ---
+meg_figureStyle
 xlabel('Time (ms)')
 ylabel('ITPC')
-figTitle = 'temporalExpectation_TS'; 
-
 xlim([-100 2400])
 ylim([0.25 0.4])
 
@@ -108,11 +187,13 @@ ylim([0.25 0.4])
 % xline((100-beforeCushion)*10) 
 
 if saveFigs 
+    figTitle = sprintf('temporalExpectation_allTrials_TS_fit_%s',errorBarType); 
     saveas(gcf,sprintf('%s.svg', figTitle)) 
 end
 
 %% FIG: 20 Hz ITPC slope by ITI 
 % December 20, 2021 
+% load separate data? 
 
 % --- Figure ---
 figure
@@ -120,6 +201,7 @@ set(gcf,'Position',[100 100 300 400])
 hold on 
 meg_figureStyle
 
+ITIs = 500:200:1500; 
 for i = 1:numel(ITIs)
     fieldname = sprintf('ITI%d',ITIs(i));
     y = A.(fieldname).slopes' * 1000; 
@@ -258,7 +340,7 @@ if saveFigs
     saveas(gcf,sprintf('%s.svg', figTitle)) 
 end
 
-%% FIG: 20 Hz ITPC whole time series, trials by precue 
+%% FIG: 20 Hz ITPC time series by precue with fit 
 
 % setup 
 sampling = 1:10:7001;
@@ -271,45 +353,64 @@ set(gcf,'Position',[100 100 600 400])
 hold on 
 
 % --- Fit settings ---
+paddingBefore = 80; % check 
 toi = abs(p.tstart)+p.eventTimes(1):abs(p.tstart)+p.eventTimes(2); % preCue:T1
 toi = toi(1):toi(end)-paddingBefore; % select timing for fit 
 % --- Cue T1 --- 
 vals = []; 
-vals = squeeze(A.cueT1.subject(freq,:,:));  % frequency x time x subject (from avg sessions)
-groupVals_cueT1 = squeeze(mean(vals,2)); % average across subject 
+vals_cueT1 = squeeze(A.cueT1.subject(freq,:,:));  % frequency x time x subject (from avg sessions)
+groupVals_cueT1 = squeeze(mean(vals_cueT1,2)); % average across subject 
 % do fit 
 [c1,error1] = polyfit(toi,groupVals_cueT1(toi),1);
 [y1_est,delta1] = polyval(c1,toi,error1);
 p1_fit = plot(p.t(toi),y1_est,'Color',p.cueColors(1,:),'LineWidth',2); 
-% downsample 
-groupVals_cueT1 = groupVals_cueT1(sampling); 
 
 % --- Cue T2 --- 
 vals = []; 
-vals = squeeze(A.cueT2.subject(freq,:,:));  % frequency x time x subject (from avg sessions)
-groupVals_cueT2 = squeeze(mean(vals,2)); % average across subject 
+vals_cueT2 = squeeze(A.cueT2.subject(freq,:,:));  % frequency x time x subject (from avg sessions)
+groupVals_cueT2 = squeeze(mean(vals_cueT2,2)); % average across subject 
 % do fit 
 [c2,error2] = polyfit(toi,groupVals_cueT2(toi),1);
 [y2_est,delta2] = polyval(c2,toi,error2);
 p2_fit = plot(p.t(toi),y2_est,'Color',p.cueColors(2,:),'LineWidth',2); 
-% downsample 
-groupVals_cueT2 = groupVals_cueT2(sampling); 
+
+% -- Error Bars (TS) --- 
+plotErrorBars = 1; 
+errorBarType = 'EB-TS-SED'; % 'EB-TS' 'EB-fit' 'EB-TS-baselineNorm' 'EB-TS-SED'
+if plotErrorBars
+    includeIdx = 1:10;
+    switch errorBarType
+        case 'EB-TS-SED'
+            t = p.t(sampling);
+            sed = vals_cueT1-vals_cueT2;
+            sed = std(sed(:,includeIdx),[],2)/sqrt(numel(includeIdx));
+            % --- Precue T1 ---
+            line_precueT1 = shadedErrorBar(t,groupVals_cueT1(sampling), sed(sampling),...
+                'lineProps', {'MarkerFaceColor',p.cueColors(1,:), 'LineWidth', 0.2, 'Color',p.cueColors(1,:)}, 'transparent',1);
+            % --- Precue T2 ---
+            line_precueT2 = shadedErrorBar(t,groupVals_cueT2(sampling), sed(sampling),...
+                'lineProps', {'MarkerFaceColor',p.cueColors(2,:), 'LineWidth', 0.2, 'Color',p.cueColors(2,:)}, 'transparent',1);
+    end
+end
 
 % --- Plot T1 T2 TS --- 
-plot(t, groupVals_cueT1,'LineWidth',3,'Color',p.cueColors(1,:))
-plot(t, groupVals_cueT2,'LineWidth',3,'Color',p.cueColors(2,:))
-meg_figureStyle
+plot(t, groupVals_cueT1(sampling),'LineWidth',3,'Color',p.cueColors(1,:))
+plot(t, groupVals_cueT2(sampling),'LineWidth',3,'Color',p.cueColors(2,:))
+
+% --- Plot event lines --- 
 for i = 1:numel(p.eventTimes)
     xline(p.eventTimes(i),'Color',[0.5 0.5 0.5],'LineWidth',1)
 end
-xlabel('Time (ms)')
-ylabel('ITPC')
-figTitle = 'temporalExpectation_cue_TS'; 
 
+% --- Formatting --- 
+meg_figureStyle
 xlim([-100 2400])
 ylim([0.25 0.4])
+xlabel('Time (ms)')
+ylabel('ITPC')
 
 if saveFigs 
+    figTitle = 'temporalExpectation_TS_byPrecue_errorBarSED'; 
     saveas(gcf,sprintf('%s.svg', figTitle)) 
 end
 

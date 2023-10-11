@@ -1,4 +1,4 @@
-function [fH,figNames] = meg_plotERF(data,p,selectedChannels,plotSingleTrial,plotAvgTrial,plotAvgChannel)
+function [A, fH,figNames] = meg_plotERF(data,p,selectedChannels,plotSingleTrial,plotAvgTrial,plotAvgChannel)
 
 % MEG_PLOTERF(data,selectedChannels,plotSingleTrial,plotAvgTrial)
 %

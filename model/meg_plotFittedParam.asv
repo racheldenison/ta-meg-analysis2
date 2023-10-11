@@ -1,0 +1,101 @@
+function meg_plotFittedParam(fittedP,p)
+% structure: each field corresponds to one fitted parameter 
+% 10 sub x 2 sessions x 2 precues
+
+%% Settings
+plotSubjects = 1; 
+xJitter = 0.2; 
+idxPeaks = 1:10; 
+
+%% Setup 
+fields = fieldnames(fittedP); 
+nFields = numel(fields);
+
+xs = repmat(1,[10,1]);
+sSize = 100; 
+subjectColor = [0.7 0.7 0.7]; 
+
+%% --- Figure ---
+for iV = 1:nFields
+    figure
+    set(gcf,'Position',[100 100 300 500])
+    hold on
+
+    % -- All other params ---
+    for iS = 1:2 % sessions
+        if iS == 1
+            scatter(fittedP.(fields{iV})(:,iS,1),... % precue T1 
+                fittedP.(fields{iV})(:,iS,2),... % precue T2 
+                sSize, 'filled','MarkerFaceColor','k','MarkerEdgeColor','w')
+        else
+            scatter(fittedP.(fields{iV})(:,iS,1),...
+                fittedP.(fields{iV})(:,iS,2),...
+                sSize, 'filled','MarkerFaceColor','w','MarkerEdgeColor','k')
+        end
+    end
+
+    for iSubject = 1:10
+        % --- Subject lines (between S1 and S2) ---
+        s = plot([fittedP.(fields{iV})(iSubject,1,1) fittedP.(fields{iV})(iSubject,2,1)],...
+            [fittedP.(fields{iV})(iSubject,1,2) fittedP.(fields{iV})(iSubject,2,2)],...
+            'Color',subjectColor);
+    end
+
+    % --- Format ---
+    ylabel(sprintf('%s',fields{iV}))
+    meg_figureStyle
+    axis square 
+end
+
+%% Polar plot of phase
+set(gcf,'Position',[100 100 300 300])
+for iV = 1:nFields
+    if strcmp(fields{iV},'phaserad')
+        figure
+        % polarplot(theta,rho)
+        for iC = 1:2 % precues
+            theta = fittedP.(fields{iV})(:,:,iC);
+            rho = repmat(1,[10,1])*iC;
+            polarscatter(theta,rho,sSize,'filled','MarkerFaceColor',p.cueColors(iC,:))
+            hold on 
+        end
+    end
+end
+
+%% Plot data by precue 
+% figure
+% set(gcf,'Position',[100 100 1200 300])
+% for iV = 1:nFields
+%     subplot(1,nFields,iV)
+%     hold on
+% 
+%     % -- All other params ---
+%     for iC = 1:2 % precues
+%         for iS = 1:2 % sessions
+%             if iS == 1
+%                 sign = -1;
+%             else
+%                 sign = 1;
+%             end
+%             scatter( (sign*xJitter)+xs*iC,...
+%                 fittedP.(fields{iV})(:,iS,iC),...
+%                 sSize, 'filled','MarkerFaceColor',p.cueColors(iC,:))
+%         end
+% 
+%         for iSubject = 1:10
+%             % --- Subject lines (between S1 and S2) ---
+%             s = plot([(-1*xJitter)+xs(1)*iC (1*xJitter)+xs(1)*iC],...
+%                 [fittedP.(fields{iV})(iSubject,1,iC) fittedP.(fields{iV})(iSubject,2,iC)],...
+%                 'Color',subjectColor);
+%         end
+%     end
+% 
+%     % --- Format --- 
+%     ylabel(sprintf('%s',fields{iV}))
+%     meg_figureStyle
+% end
+
+
+
+
+

@@ -15,6 +15,7 @@ function [D,A] = meg_peakAnalysis(D4,nChOI,groupC,expt,user)
 % load('/Users/kantian/Dropbox/Data/TA2/MEG/Group/mat/groupD.mat') 
 % load('/Users/kantian/Dropbox/github/ta-meg-analysis2/groupDataMat/TA2/D.mat')
 % load('/Users/kantian/Dropbox/Data/TA2/MEG/Group/mat/subjectD2.mat')
+
 %% checks 
 if ~exist('user','var')
     user = [];
@@ -50,7 +51,6 @@ A.windowSize = 170;
 [sessionNames,subjectNames] = meg_sessions(expt); 
 
 %% setup 
-
 plotFigs = 1; 
 exptDir = meg_pathToTAMEG(expt, user);
 figDir = sprintf('%s/Group/figures/%s_max/nCh_%d_%d',exptDir,slice,nChOI(1),nChOI(end)); 
@@ -62,7 +62,6 @@ end
 colors = distinguishable_colors(numel(subjectNames));
 
 %% session structure: D5.cue(time x session) 
-
 D5 = []; vals = []; 
 D5.nChannels = nChOI; 
 for iF = 1:numel(fields)

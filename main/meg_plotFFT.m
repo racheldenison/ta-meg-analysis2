@@ -49,6 +49,8 @@ nConds = numel(condNames);
 nChannels = numel(selectedChannels);
 nFreqs = numel(selectedFreq); 
 
+p = meg_params('TANoise_ITPCsession8');
+
 %% checks
 
 % check data

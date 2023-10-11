@@ -115,12 +115,12 @@ yAmp = abs(yCrop);
 yIntegral = sum(yCrop) * deltaT
 yAmpIntegral = 0.5 * sum(yAmp) * deltaT
 
-% Plot it
-figure(1); clf;
+%% Plot it
+figure(1); % clf;
 subplot(n+1,1,1);
 plot(t,squeeze(stimulus(:,2,2)));
 %ylim([0 1/deltaT]);
-drawPublishAxis;
+% drawPublishAxis;
 for nn = 1:n
   subplot(n+1,1,nn+1);
   if isreal(yCrop(:,nn))
@@ -133,11 +133,11 @@ for nn = 1:n
   end
   %ylim([-yMax yMax]);
   title(['n = ',num2str(nn)]);
-  drawPublishAxis;
+  % drawPublishAxis;
 end
-print(['Figures/tfilt1.eps'],'-depsc','-painters');
+% print(['Figures/tfilt1.eps'],'-depsc','-painters');
 
-% Frequency response (this only makes sense for impulse stimulus)
+%% Frequency response (this only makes sense for impulse stimulus)
 yCrop2 = yCrop(t>=0,:);
 F = size(yCrop2,1);
 Fs = 1/(deltaT/1000);
@@ -146,7 +146,7 @@ yFourierAmp = abs(fft(yCrop2))/F;
 yFourierAmp = yFourierAmp(1:F/2+1,:);
 
 % Plot it
-figure(2); clf;
+figure(2); % clf;
 prefFreqs = zeros(1,n);
 for nn = 1:n
   subplot(n,1,nn);
@@ -157,7 +157,7 @@ for nn = 1:n
   ylim([0.01,1]);
   %axis square;
   title(['n = ',num2str(nn)]);
-  drawPublishAxis;
+  % drawPublishAxis;
 end
 prefFreqs
-print(['Figures/tfilt2.eps'],'-depsc','-painters');
+% print(['Figures/tfilt2.eps'],'-depsc','-painters');
