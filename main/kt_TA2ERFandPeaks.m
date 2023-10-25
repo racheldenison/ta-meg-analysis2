@@ -162,6 +162,9 @@ if plotFigs
     end
 end
 
+%% Save 
+save('TA2_MaxLatency_TargetPrecue.mat','ACh','channelGroups','D','-v7.3'); 
+
 %% Compile top 20 sessions
 for iSession = 1:20
     channels(iSession,:) = groupC(iSession).sortChByProm; 

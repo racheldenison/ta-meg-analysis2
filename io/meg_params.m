@@ -26,6 +26,8 @@ p.cueColors = [122/255 142/255 194/255;  % 1 cueT1 blue
     129/255 74/255 157/255]; % 8 purple invalid 
 % extraColors = distinguishable_colors(10);
 % p.cueColors = [p.cueColors; extraColors];
+p.darkColors = [2 46 145;
+    162 40 10]/255;
 
 p.colorAlpha = 0.75; % transparency
 p.cueErrorBarColors = [163/255 180/255 216/255; 232/255,168/255,154/255];

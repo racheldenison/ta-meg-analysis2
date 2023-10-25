@@ -8,3 +8,4 @@ ax.LineWidth = 1.5;
 ax.XColor = 'black';
 ax.YColor = 'black';
 ax.FontSize = 18;
+ax.FontName = 'Helvetica-Light'; 

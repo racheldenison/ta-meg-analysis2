@@ -1,8 +1,0 @@
-function rsq = meg_rsquared(ssr,sst)
-% Calculate r-squared 
-% Inputs:
-%   ssr: sum squared regression 
-%   sst: total sum of squares 
-% Ouputs 
-%   E: root mean square error 
-%   yhat: predicted model output
