@@ -51,7 +51,7 @@ nConds = numel(condNames);
 nChannels = numel(selectedChannels);
 nFreqs = numel(selectedFreq); 
 figNames = []; 
-plotFigs = 0; 
+plotFigs = 1; % 0  
 
 %% checks
 
@@ -115,7 +115,7 @@ for iC = 1:numel(condNames)
         meanSpectrumAll = [];
         vals = [];
         vals = squeeze(nanmean(data.(condNames{iC})(:,selectedChannels(iCh),:),2))'; % trials by samples
-        vals = vals(:,1:7000); % November 3 ITPC spectrogram edit
+        % vals = vals(:,1:7000); % November 3 ITPC spectrogram edit
         [spectrum,freqoi,timeoi] = ft_specest_wavelet(vals, t/1000, ...
             'freqoi', foi, 'width', width);
 
@@ -147,9 +147,10 @@ for iC = 1:numel(condNames)
         A.(condNames{iC}).tfAmps(:,:) = mean(tfAmps,3,'omitnan'); % f x t x  ch
         A.(condNames{iC}).tfPows(:,:) = mean(tfPows,3,'omitnan'); % f x t x  ch
         A.(condNames{iC}).ITPC(:,:,iCh) = itpc; % f x t x  ch
+        A.(condNames{iC}).spectrum(:,:,iCh) = squeeze(spectrum); % complex values  
         A.(condNames{iC}).phaseAngle(:,iCh,:,:) = angle(spectrum);
     end
-    A.(condNames{iC}).ITPCMean = nanmean(A.(condNames{iC}).ITPC,3);
+    A.(condNames{iC}).ITPCMean = nanmean(A.(condNames{iC}).ITPC,3); % average channels 
     % A.(condNames{iC}).phaseAngleCh = squeeze(nanmean(A.(condNames{iC}).phaseAngle,1));
 end
 
@@ -162,7 +163,7 @@ if plotFigs
         vals = []; 
         vals = nanmean(data.(condNames{iC})(:,selectedChannels,:),3); 
         vals = nanmean(vals,2); % average channels 
-        plot(t,vals,'Color',p.cueColors(iC,:),'LineWidth',2)
+        plot(1:size(vals,1),vals,'Color',p.cueColors(iC,:),'LineWidth',2)
     end
     vline(p.eventTimes,':k')
     set(gca,'TickDir','out');
@@ -183,7 +184,7 @@ if plotFigs
     hold on 
     for iC = 1:nConds
         vals = []; 
-        vals = A.(condNames{iC}).ITPCMean(20,:); % average channels 
+        vals = A.(condNames{iC}).ITPCMean; % average channels 
         plot(t,vals,'Color',p.cueColors(iC,:),'LineWidth',2)
     end
     vline(p.eventTimes,':k')
