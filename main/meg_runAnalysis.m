@@ -49,10 +49,10 @@ end
 analStr = 'bietfp'; % 'bietfp' 'ebi' 
 preprocStr = 'bietfp'; 
 
-paramType = 'Analysis'; % for meg_params 'Preproc', 'Analysis', 'ITPC', 'ITPCsession8" (to correct for the cutoff run)
-analType = 'readdata'; % 'ITPC'; % 'none','readdata','sortchannels','ERF','TF','decode', 'TFwholeTrial'
-avgTrial = 1; % 0 for single trial, 1 for average trial
-sliceType = 'cue'; % 'all','cue','cueAcc','ITIjitter','ITICue'
+paramType = 'ITPCshort'; % 'ITPCsession8'; % for meg_params 'Preproc', 'Analysis', 'ITPC', 'ITPCsession8" (to correct for the cutoff run)
+analType = 'ITPC'; % 'ITPC'; % 'none','readdata','sortchannels','ERF','TF','decode', 'TFwholeTrial'
+avgTrial = 0; % 0 for single trial, 1 for average trial
+sliceType = 'all'; % 'all','cue','cueAcc','ITIjitter','ITICue'
 
 % data
 getData = 'fromMat'; % 'fromSqd' (read data from sqd), 'fromMat' (load data from prepared .mat) 
@@ -60,7 +60,7 @@ saveData = 0; % save .mat
 
 % channels
 loadChannels = 1;
-channelSelectionType = 'peakprom'; % '20Hz_ebi' (rank by 20Hz power), 'peakprom' (rank by T1 and T2 ERP peak prominence), 'classweights'
+channelSelectionType = '20Hz_ebi'; % '20Hz_ebi' (rank by 20Hz power), 'peakprom' (rank by T1 and T2 ERP peak prominence), 'classweights'
 
 selectChannels = 1;
 nChannelsSelected = 5; % number of channels to select from channelsRanked
