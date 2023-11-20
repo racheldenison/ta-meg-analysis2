@@ -16,6 +16,8 @@ switch user
         root = 'Volumes/kantian/Dropbox/Data'; 
     case 'rachel'
         root = '/Volumes/Rachel NYU/Backup_mcq_20200321/TA_MEG/MEG';
+    case 'scc'
+        root = '/projectnb/rdenlab/TANoise';
     otherwise
         error('user not recognized')
 end
