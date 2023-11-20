@@ -1,4 +1,4 @@
-function figureStyle()
+function meg_figureStyle()
 
 % adjusts fig axis and text styling
 box off
@@ -7,5 +7,22 @@ ax = gca;
 ax.LineWidth = 1.5;
 ax.XColor = 'black';
 ax.YColor = 'black';
-ax.FontSize = 18;
+
+smlFont = 14;
+bigFont = 24; 
+
+ax.FontSize = bigFont;
 ax.FontName = 'Helvetica-Light'; 
+ 
+ax.XAxis.FontSize = smlFont;
+ax.YAxis.FontSize = smlFont;
+
+ax.LabelFontSizeMultiplier = bigFont/smlFont; 
+
+
+
+
+
+
+
+
