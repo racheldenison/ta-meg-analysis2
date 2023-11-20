@@ -3,7 +3,7 @@ function p = meg_params(expt)
 % function p = meg_params(expt)
 %
 % INPUT
-%   expt: string expt type ('TA2_Preproc','TA2_Analysis','TANoise_Preproc','TANoise_Analysis','TANoise_ITPC','TANoise_ITPCsession8','Cupcake') 
+%   expt: string expt type ('TA2_Preproc','TA2_Analysis','TANoise_Preproc','TANoise_Analysis','TANoise_ITPC','TANoise_ITPCsession8','TANoise_ITPCshort','Cupcake') 
 % OUTPUT
 % p
 %   parameters, including channel info, event timing, trial segmenting 
@@ -50,7 +50,7 @@ switch expt
     case 'TA2_Analysis'
         p.eventTimes = [0 1050 1350 2300]; % accounting for 50ms photodiode delay
         p.eventNames = {'precue','T1','T2','response cue'};
-        p.tstart = -1200; % -500; 
+        p.tstart = -500; % -1200; % -500; 
         p.tstop = 3900; 
         p.prestim = 1.2; 
         p.poststim = 3.9; 
@@ -94,6 +94,16 @@ switch expt
         p.poststim = 5.0;
         p.trialTime = 7000; % ms
         p.ssvefFreq = 20; 
+
+    case 'TANoise_ITPCshort'
+        p.eventTimes = [0 1050 1350 2300];
+        p.eventNames = {'precue','T1','T2','response cue'};
+        p.tstart = -500;
+        p.tstop = 3900;
+        p.prestim = 5.0;
+        p.poststim = 3.9;
+        p.trialTime = 5000; % ms
+        p.ssvefFreq = 20;
         
     case 'Cupcake'
         p.tstart = -1000; 
