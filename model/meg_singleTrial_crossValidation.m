@@ -1,6 +1,11 @@
-function meg_singleTrial_crossValidation(expt, sessionDir, user)
+function [mdlFit A3 A4] = meg_singleTrial_crossValidation(expt, sessionDir, user)
 % function meg_singleTrial_crossValidation(expt, sessionDir, user)
 % split half cross validation per subject 
+
+% Outputs: 
+%   mdlFit: strucutre of fitted model parameters 
+%   A3: structure of testing and training phase angles, and trial indics 
+%   A4: structure of model fit rsquares 
 
 analStart = tic; % for timing check 
 
@@ -8,7 +13,12 @@ analStart = tic; % for timing check
 % sessionDir = 'R0817_20171212'; 
 % expt = 'TANoise'; 
 
-cluster = 0; % using cluster? 0=local, 1=cluster 
+switch user 
+    case 'scc'
+        cluster = 1; 
+    otherwise 
+        cluster = 0; % displays messages of run status if not cluster 
+end
 
 [sessionNames,subjectNames,ITPCsubject,ITPCsession] = meg_sessions(expt); 
 
@@ -17,15 +27,17 @@ sessionIdx = find(strcmp(sessionNames,sessionDir));
 condNames = {'all'}; 
 nChannels = 5; 
 
-user = 'kantian'; 
-workingDir = sprintf('/Users/%s/Dropbox/github/ta-meg-analysis-model/model_anticipatory',user); 
-addpath(genpath(workingDir)) % ta-meg-analysis-model/model_anticipatory
-addpath(genpath('../../ta-meg-analysis2')) 
+% loads single trial ITPC data 
+exptDir = meg_pathToTAMEG(expt, user);
+dataFile = sprintf('%s/Group/mat/singleTrialPower_allTrials_s20.mat', exptDir); 
+load(dataFile) % groupA (20 Hz filtered data), groupB (behavior)  
+
+% workingDir = sprintf('/Users/%s/Dropbox/github/ta-meg-analysis-model/model_anticipatory',user); 
 
 figFormat = 'png';
 
 dateStr = datetime('now','TimeZone','local','Format','yyMMdd');
-figDir = sprintf('%s/singleTrialITPC/%s',workingDir,dateStr); 
+figDir = sprintf('%s/Group/figures/crossValidation_%s', exptDir, dateStr);
 if ~exist(figDir, 'dir')
     mkdir(figDir)
 end
@@ -148,7 +160,7 @@ options = optimoptions('fmincon','Display','iter');
 % edit to be dynamic path 
 % groupA: MEG, 20 Hz phase angle: trials (384) x ch (5) x foi (1) x time (7001)
 % groupB 
-load(sprintf('/Users/%s/Dropbox/github/ta-meg-analysis2/data/singleTrialPower_allTrials_s20.mat',user)); 
+% load(sprintf('/Users/%s/Dropbox/github/ta-meg-analysis2/data/singleTrialPower_allTrials_s20.mat',user)); 
 
 %% Calculate ITPC from split training testing data
 % A3 for analysis of split training testing data
@@ -360,8 +372,8 @@ saveas(gcf,sprintf('%s/%s.%s', figDir, figTitle, figFormat))
 A4.analTiming = toc(analStart); % elapsed timing (s) 
 
 %% Save A4
-filename = sprintf('%s/CV_%s_%s',figDir,sessionDir,dateStr);
-save(filename,'A4','mdlFit','A3','-v7.3')
+% filename = sprintf('%s/CV_%s_%s',figDir,sessionDir,dateStr);
+% save(filename,'A4','mdlFit','A3','-v7.3')
 
 
 
