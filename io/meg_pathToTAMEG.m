@@ -1,4 +1,5 @@
 function path = meg_pathToTAMEG(exptName, user)
+% function path = meg_pathToTAMEG(exptName, user)
 
 if nargin < 1
     error('Must provide experiment name [TANoise or TA2]')
