@@ -48,9 +48,9 @@ addpath(sprintf('/Users/%s/Dropbox/Software/CircStat2012a',user))
 
 %% Analysis settings 
 % --- Cross validation split half setttings ---
-nPermCV = 5; % 10, 100 
+nPermCV = 100; % 10, 100 
 % --- Model fit start coefficient perms ---
-nPerms = 3; % 10, 100
+nPerms = 100; % 10, 100
 
 % --- MEG settings --- 
 p = meg_params('TANoise_ITPCsession8');
