@@ -356,8 +356,13 @@ saveas(gcf,sprintf('%s/%s.%s', figDir, figTitle, figFormat))
 A4.analTiming = toc(analStart); % elapsed timing (s) 
 
 %% Save A4
-% filename = sprintf('%s/CV_%s_%s',figDir,sessionDir,dateStr);
-% save(filename,'A4','mdlFit','A3','-v7.3')
+analDir = sprintf('%s/analysis/crossValidation',pwd);
+if ~exist(analDir,'dir')
+    mkdir(analDir)
+end
+filename = sprintf('%s/%s_crossValidation.mat',analDir,sessionDir);
+save(filename,'mdlFit','A3','A4','-v7.3')
+fprintf('Saved! %s', sessionDir)
 
 
 
