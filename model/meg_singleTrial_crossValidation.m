@@ -215,8 +215,8 @@ for iPerm = 1:nPermCV % permute splits for cross validation
         clear dataFit dataTest
         % dataFit = A3.(cueLevel{iC}).ITPCMean.training(tIdx,iPerm)'; % 1 x time (971), fit data on training partition
         % dataTest = A3.(cueLevel{iC}).ITPCMean.testing(tIdx,iPerm)';
-        dataFit = ITPCMean.training(tIdx);
-        dataTest = ITPCMean.testing(tIdx);
+        dataFit = ITPCMean.training(tIdx)';
+        dataTest = ITPCMean.testing(tIdx)';
 
         for iF = 1:numel(fitTypes)
             for iP = 1:nPerms % iP is optimization permutation start grid
