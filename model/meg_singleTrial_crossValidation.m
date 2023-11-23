@@ -155,6 +155,7 @@ phaseAngle = squeeze(groupA(sessionIdx).all.phaseAngle); % trials (384) x ch (5)
 nTrials = size(phaseAngle,1);
 nChannels = size(phaseAngle,2); 
 
+counter = 1; 
 for iPerm = 1:nPermCV % permute splits for cross validation
     fprintf('Cross validation split %d of %d...',iPerm,nPermCV);
 
@@ -325,14 +326,15 @@ for iPerm = 1:nPermCV % permute splits for cross validation
         end
     end
     %% Save analyses into temp file 
-    newTempFile = sprintf('%s/%s_crossValidation_perms%d.mat',analDir,sessionDir,iPerm);
+    newTempFile = sprintf('%s/%s_crossValidation_perms%d.mat',analDir,sessionDir,counter);
     save(newTempFile,'mdlFit','A3','A4','-v7.3')
-    if iPerm>1
-        tempFile = sprintf('%s/%s_crossValidation_perms%d.mat',analDir,sessionDir,iPerm-1);
+    if counter>1
+        tempFile = sprintf('%s/%s_crossValidation_perms%d.mat',analDir,sessionDir,counter-1);
         if isfile(tempFile)
             delete tempFile
         end
     end
+    counter = counter+1;
 end % end CV splits 
 figTitle = sprintf('%s_TANoise_CrossValidation_first10Perms',sessionDir);
 saveas(gcf,sprintf('%s/%s.%s', figDir, figTitle, figFormat))
