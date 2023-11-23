@@ -37,7 +37,7 @@ load(dataFile) % groupA (20 Hz filtered data), groupB (behavior)
 figFormat = 'png';
 
 dateStr = datetime('now','TimeZone','local','Format','yyMMdd');
-figDir = sprintf('%s/Group/figures/crossValidation_%s', exptDir, dateStr);
+figDir = sprintf('%s/Group/figures/crossValidation/%s', exptDir, dateStr);
 if ~exist(figDir, 'dir')
     mkdir(figDir)
 end
@@ -325,10 +325,6 @@ for iPerm = 1:nPermCV % permute splits for cross validation
                 plot(dataFit)
                 xlabel('Time (ms)')
                 ylabel('ITPC')
-                if iPerm==10 && iF==2
-                    figTitle = sprintf('%s_TANoise_CrossValidation_first10Perms',sessionDir);
-                    saveas(gcf,sprintf('%s/%s.%s', figDir, figTitle, figFormat))
-                end
             end
 
             %% Save all
@@ -336,6 +332,8 @@ for iPerm = 1:nPermCV % permute splits for cross validation
         end
     end
 end
+figTitle = sprintf('%s_TANoise_CrossValidation_first10Perms',sessionDir);
+saveas(gcf,sprintf('%s/%s.%s', figDir, figTitle, figFormat))
 
 %% Plot histogram
 figure
