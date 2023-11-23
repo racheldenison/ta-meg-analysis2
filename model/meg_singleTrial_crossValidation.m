@@ -32,8 +32,7 @@ exptDir = meg_pathToTAMEG(expt, user);
 dataFile = sprintf('%s/Group/mat/singleTrialPower_allTrials_s20.mat', exptDir); 
 load(dataFile) % groupA (20 Hz filtered data), groupB (behavior)  
 
-% workingDir = sprintf('/Users/%s/Dropbox/github/ta-meg-analysis-model/model_anticipatory',user); 
-
+% --- Figures --- 
 figFormat = 'png';
 
 dateStr = datetime('now','TimeZone','local','Format','yyMMdd');
@@ -42,9 +41,11 @@ if ~exist(figDir, 'dir')
     mkdir(figDir)
 end
 
-% --- Add circular stats toolbox ---
-% Berens (2009) https://www.jstatsoft.org/article/view/v031i10
-addpath(sprintf('/Users/%s/Dropbox/Software/CircStat2012a',user)) 
+analDir = sprintf('%s/analysis/crossValidation/%s', pwd, dateStr);
+if ~exist(analDir,'dir')
+    mkdir(analDir)
+end
+filename = sprintf('%s/%s_crossValidation.mat',analDir,sessionDir); % analysis file name
 
 %% Analysis settings 
 % --- Cross validation split half setttings ---
@@ -189,8 +190,12 @@ for iPerm = 1:nPermCV % permute splits for cross validation
     end
     
     % Save ITPC by split halves, for model fit 
-    A3.all.ITPCMean.training(:,iPerm) = nanmean(ITPCtraining,2); % average channels
-    A3.all.ITPCMean.testing(:,iPerm) = nanmean(ITPCtesting,2); 
+    % don't save, for efficiency? 
+    % A3.all.ITPCMean.training(:,iPerm) = nanmean(ITPCtraining,2); % average channels
+    % A3.all.ITPCMean.testing(:,iPerm) = nanmean(ITPCtesting,2); 
+    clear ITPCMean
+    ITPCMean.training = nanmean(ITPCtraining,2); % average channels; 
+    ITPCMean.testing = nanmean(ITPCtesting,2);
     % Save idx of training and testing trials 
     A3.all.trialsIdx.training(:,iPerm) = trainingTrials; 
     A3.all.trialsIdx.testing(:,iPerm) = testingTrials; 
@@ -207,9 +212,11 @@ for iPerm = 1:nPermCV % permute splits for cross validation
     %% Both model fits (linear, linear+2Hz)
     clear x0 x0Perm
     for iC = 1:numel(cueLevel)
-        clear dataFit
-        dataFit = A3.(cueLevel{iC}).ITPCMean.training(tIdx,iPerm)'; % 1 x time (971), fit data on training partition
-        dataTest = A3.(cueLevel{iC}).ITPCMean.testing(tIdx,iPerm)';
+        clear dataFit dataTest
+        % dataFit = A3.(cueLevel{iC}).ITPCMean.training(tIdx,iPerm)'; % 1 x time (971), fit data on training partition
+        % dataTest = A3.(cueLevel{iC}).ITPCMean.testing(tIdx,iPerm)';
+        dataFit = ITPCMean.training(tIdx);
+        dataTest = ITPCMean.testing(tIdx);
 
         for iF = 1:numel(fitTypes)
             for iP = 1:nPerms % iP is optimization permutation start grid
@@ -317,6 +324,16 @@ for iPerm = 1:nPermCV % permute splits for cross validation
             A4.(fitTypes{iF}).(cueLevel{iC}).rsq(iPerm) = rsq;
         end
     end
+    %% Save analyses into temp file 
+    newTempFile = sprintf('%s/%s_crossValidation_perms%d.mat',analDir,sessionDir,iPerm);
+    if iPerm>1
+        tempFile = sprintf('%s/%s_crossValidation_perms%d.mat',analDir,sessionDir,iPerm-1);
+        if isfile(tempFile) && isfile(newTempFile)
+            movefile(tempFile,newTempFile);
+        end
+    end
+    save(newTempFile,'mdlFit','A3','A4','-v7.3')
+    
 end
 figTitle = sprintf('%s_TANoise_CrossValidation_first10Perms',sessionDir);
 saveas(gcf,sprintf('%s/%s.%s', figDir, figTitle, figFormat))
@@ -356,11 +373,6 @@ saveas(gcf,sprintf('%s/%s.%s', figDir, figTitle, figFormat))
 A4.analTiming = toc(analStart); % elapsed timing (s) 
 
 %% Save A4
-analDir = sprintf('%s/analysis/crossValidation',pwd);
-if ~exist(analDir,'dir')
-    mkdir(analDir)
-end
-filename = sprintf('%s/%s_crossValidation.mat',analDir,sessionDir);
 save(filename,'mdlFit','A3','A4','-v7.3')
 fprintf('Saved! %s', sessionDir)
 
