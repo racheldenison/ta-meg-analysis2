@@ -326,15 +326,14 @@ for iPerm = 1:nPermCV % permute splits for cross validation
     end
     %% Save analyses into temp file 
     newTempFile = sprintf('%s/%s_crossValidation_perms%d.mat',analDir,sessionDir,iPerm);
+    save(newTempFile,'mdlFit','A3','A4','-v7.3')
     if iPerm>1
         tempFile = sprintf('%s/%s_crossValidation_perms%d.mat',analDir,sessionDir,iPerm-1);
-        if isfile(tempFile) && isfile(newTempFile)
-            movefile(tempFile,newTempFile);
+        if isfile(tempFile)
+            delete tempFile
         end
     end
-    save(newTempFile,'mdlFit','A3','A4','-v7.3')
-    
-end
+end % end CV splits 
 figTitle = sprintf('%s_TANoise_CrossValidation_first10Perms',sessionDir);
 saveas(gcf,sprintf('%s/%s.%s', figDir, figTitle, figFormat))
 
