@@ -4,8 +4,8 @@ function [mdlFit A3 A4] = meg_singleTrial_crossValidation(expt, sessionDir, user
 
 % Outputs: 
 %   mdlFit: strucutre of fitted model parameters 
-%   A3: structure of testing and training phase angles, and trial indics 
-%   A4: structure of model fit rsquares 
+%   A3: structure of split half testing and training phase angles, and trial indices 
+%   A4: structure of model fit rsquares per permuted split half 
 
 analStart = tic; % for timing check 
 
@@ -145,22 +145,7 @@ mdlFit.hardub = mdlFit.ub;
 nonlcon = []; 
 
 % --- Options --- 
-options = optimoptions('fmincon','Display','iter'); 
-
-%% Run analysis
-% Load data 
-% clear group A4
-% 
-% [A, D, selectedChannels, I, B] = meg_runAnalysis(expt, sessionNames{iS}, 'karen');
-% group(iS).A = A;
-% group(iS).D = D;
-% group(iS).selectedChannels = selectedChannels;
-% group(iS).B = B;
-
-% edit to be dynamic path 
-% groupA: MEG, 20 Hz phase angle: trials (384) x ch (5) x foi (1) x time (7001)
-% groupB 
-% load(sprintf('/Users/%s/Dropbox/github/ta-meg-analysis2/data/singleTrialPower_allTrials_s20.mat',user)); 
+% options = optimoptions('fmincon','Display','iter'); 
 
 %% Calculate ITPC from split training testing data
 % A3 for analysis of split training testing data
@@ -170,6 +155,8 @@ nTrials = size(phaseAngle,1);
 nChannels = size(phaseAngle,2); 
 
 for iPerm = 1:nPermCV % permute splits for cross validation
+    fprintf('Cross validation split %d of %d...',iPerm,nPermCV);
+
     clear ITPCtraining ITPCtesting
     idxRand = randperm(nTrials);
 
@@ -227,8 +214,7 @@ for iPerm = 1:nPermCV % permute splits for cross validation
         for iF = 1:numel(fitTypes)
             for iP = 1:nPerms % iP is optimization permutation start grid
                 if ~cluster
-                    txt = sprintf('Fitting %s, permutation %d of %d...',sessionDir,iP,nPerms);
-                    disp(txt)
+                    fprintf('Fitting %s, permutation %d of %d...',sessionDir,iP,nPerms);
                 end
                 % --- Randomly pick starting coefficients from search grid ---
                 for iV = 1:nVars
