@@ -2,6 +2,11 @@ function [mdlFit A3 A4] = meg_singleTrial_crossValidation(expt, sessionDir, user
 % function meg_singleTrial_crossValidation(expt, sessionDir, user)
 % split half cross validation per subject 
 
+% Inputs:
+%   expt: 'TANoise'
+%   sessionDir: eg: 'R0817_20171212', 'test' will create simulated data
+%   user = 'karen' 'scc' 
+
 % Outputs: 
 %   mdlFit: strucutre of fitted model parameters 
 %   A3: structure of split half testing and training phase angles, and trial indices 
@@ -10,9 +15,6 @@ function [mdlFit A3 A4] = meg_singleTrial_crossValidation(expt, sessionDir, user
 analStart = tic; % for timing check 
 
 %% Setup 
-% sessionDir = 'R0817_20171212'; 
-% expt = 'TANoise'; 
-
 switch user 
     case 'scc'
         cluster = 1; 
@@ -20,17 +22,32 @@ switch user
         cluster = 0; % displays messages of run status if not cluster 
 end
 
+exptDir = meg_pathToTAMEG(expt, user);
+
 [sessionNames,subjectNames,ITPCsubject,ITPCsession] = meg_sessions(expt); 
 
-sessionIdx = find(strcmp(sessionNames,sessionDir)); 
+if strcmp(sessionDir,'test')
+    sessionIdx = 1; 
+    % simulate sine data 
+    Fs = 1000;
+    freq = 2;
+    % --- Data 1 params ---
+    intercept1 = 0.3;
+    slope1 = 1; % 0.0001; % 0.0001 more reflects actual data
+    amplitude1 = 0.1;
+    phase1 = 0; % change here
+    % --- Simulate data (in trial-relative time) ---
+    clear dummyData
+    dummyData = ((slope1/1000 * p.t) + intercept1)  + ( amplitude1 * sin( (freq*pi/(Fs/2)) * (p.t + phase1 * 100 )) ); 
+else
+    sessionIdx = find(strcmp(sessionNames,sessionDir));
+    % loads single trial ITPC data 
+    dataFile = sprintf('%s/Group/mat/singleTrialPower_allTrials_s20.mat', exptDir); 
+end
+load(dataFile) % groupA (20 Hz filtered data), groupB (behavior)  
 
 condNames = {'all'}; 
 nChannels = 5; 
-
-% loads single trial ITPC data 
-exptDir = meg_pathToTAMEG(expt, user);
-dataFile = sprintf('%s/Group/mat/singleTrialPower_allTrials_s20.mat', exptDir); 
-load(dataFile) % groupA (20 Hz filtered data), groupB (behavior)  
 
 % --- Figures --- 
 figFormat = 'png';
@@ -49,9 +66,9 @@ filename = sprintf('%s/%s_crossValidation.mat',analDir,sessionDir); % analysis f
 
 %% Analysis settings 
 % --- Cross validation split half setttings ---
-nPermCV = 100; % 10, 100 
+nPermCV = 3; % 10, 100 
 % --- Model fit start coefficient perms ---
-nPerms = 100; % 10, 100
+nPerms = 2; % 10, 100
 
 % --- MEG settings --- 
 p = meg_params('TANoise_ITPCsession8');
@@ -59,23 +76,23 @@ p = meg_params('TANoise_ITPCsession8');
 % --- Timing and ITPC settings --- 
 tT = p.tstart:p.tstop;
 
-taper          = 'hanning';
-foi            = 20; % 100;
-t_ftimwin      = 10 ./ foi;
-toiT            = p.tstart/1000:0.01:p.tstop/1000; % toi for (T)rial 
-tfAmps = []; tfAmpsAvg = [];
-tfPows = []; tfPowsAvg = [];
+% taper          = 'hanning';
+% foi            = 20; % 100;
+% t_ftimwin      = 10 ./ foi;
+% toiT            = p.tstart/1000:0.01:p.tstop/1000; % toi for (T)rial 
+% tfAmps = []; tfAmpsAvg = [];
+% tfPows = []; tfPowsAvg = [];
 
-padTotal = ceil(p.trialTime/p.fSample);
-padPre = ceil((padTotal*p.fSample-p.trialTime)/2);
-padPost = floor((padTotal*p.fSample-p.trialTime)/2);
-toiPad = (p.tstart-padPre)/1000:0.01:(p.tstop+padPost)/1000;
-tPad = p.tstart-padPre:p.tstop+padPost;
-xtick = 1:80:numel(toiPad);
-ytick = 10:10:numel(foi);
-xlims = [size(toiT,1),size(toiT,2)];
-Fsample = p.fSample;
-width = 8;
+% padTotal = ceil(p.trialTime/p.fSample);
+% padPre = ceil((padTotal*p.fSample-p.trialTime)/2);
+% padPost = floor((padTotal*p.fSample-p.trialTime)/2);
+% toiPad = (p.tstart-padPre)/1000:0.01:(p.tstop+padPost)/1000;
+% tPad = p.tstart-padPre:p.tstop+padPost;
+% xtick = 1:80:numel(toiPad);
+% ytick = 10:10:numel(foi);
+% xlims = [size(toiT,1),size(toiT,2)];
+% Fsample = p.fSample;
+% width = 8;
 
 % --- Model fitting settings 
 freq = 2; % Hz, fixed frequency for model fit 
@@ -157,48 +174,67 @@ nChannels = size(phaseAngle,2);
 
 for iPerm = 1:nPermCV % permute splits for cross validation
     fprintf('Cross validation split %d of %d...',iPerm,nPermCV);
+    
+    threshold = 0.5;
+    iters = 0; 
+    while rsq < threshold
+        clear ITPCtraining ITPCtesting
+        idxRand = randperm(nTrials);
 
-    clear ITPCtraining ITPCtesting
-    idxRand = randperm(nTrials);
+        nTrialsTest = nTrials/2; % for split half
+        nTrialsTrain = nTrials - nTrialsTest;
 
-    nTrialsTest = nTrials/2; % for split half
-    nTrialsTrain = nTrials - nTrialsTest;
+        trainingTrials = idxRand(1:nTrialsTest);
+        testingTrials = idxRand(nTrialsTest+1:nTrials);
 
-    trainingTrials = idxRand(1:nTrialsTest);
-    testingTrials = idxRand(nTrialsTest+1:nTrials);
+        % Get phase angles by training & testing splits
+        for iCh = 1:nChannels
+            for iT = 1:2 % training, then testing
+                clear vals idxTrials
+                if iT==1 % training
+                    idxTrials = trainingTrials;
+                elseif iT==2 % testing
+                    idxTrials = testingTrials;
+                end
 
-    % Get phase angles by training & testing splits 
-    for iCh = 1:nChannels
-        for iT = 1:2 % training, then testing
-            clear vals idxTrials
-            if iT==1 % training
-                idxTrials = trainingTrials; 
-            elseif iT==2 % testing 
-                idxTrials = testingTrials; 
-            end
-            vals = squeeze(phaseAngle(idxTrials,iCh,:)); % trials (192) x time (7001) 
+                switch sessionDir
+                    case 'test'
+                        clear dummyData
+                        phase = phase1+(rand(1)*2);
+                        itpc = ((slope1/1000 * p.t) + intercept1)  + ( amplitude1 * sin( (freq*pi/(Fs/2)) * (p.t + phase * 100 )) );
+                    otherwise
+                        vals = squeeze(phaseAngle(idxTrials,iCh,:)); % trials (192) x time (7001)
+                        % Calculate ITPC from phase angles
+                        itpc = squeeze(abs(mean(exp(1i*vals),1,'omitnan')));
+                end
 
-            % Calculate ITPC from phase angles 
-            itpc = squeeze(abs(mean(exp(1i*vals),1,'omitnan')));
-
-            if iT==1
-                ITPCtraining(:,iCh) = itpc; % f x t x  ch
-            elseif iT==2
-                ITPCtesting(:,iCh) = itpc;
+                if iT==1
+                    ITPCtraining(:,iCh) = itpc; % f x t x  ch
+                elseif iT==2
+                    ITPCtesting(:,iCh) = itpc;
+                end
             end
         end
+
+        % Save ITPC by split halves, for model fit
+        % don't save, for efficiency?
+        % A3.all.ITPCMean.training(:,iPerm) = nanmean(ITPCtraining,2); % average channels
+        % A3.all.ITPCMean.testing(:,iPerm) = nanmean(ITPCtesting,2);
+        clear ITPCMean
+        ITPCMean.training = nanmean(ITPCtraining,2); % average channels;
+        ITPCMean.testing = nanmean(ITPCtesting,2);
+        
+        % Calculate R2 of training and testing splits 
+        y1 = ITPCMean.training(tIdx,:); 
+        y2 = ITPCMean.testing(tIdx,:); 
+        [rsq rsq2] = calculateRSQ(y1,y2,1);
+        [rsq_uncorr rsq_uncorr2] = calculateRSQ(y1,y2,0);
+        iters = iters+1; 
     end
-    
-    % Save ITPC by split halves, for model fit 
-    % don't save, for efficiency? 
-    % A3.all.ITPCMean.training(:,iPerm) = nanmean(ITPCtraining,2); % average channels
-    % A3.all.ITPCMean.testing(:,iPerm) = nanmean(ITPCtesting,2); 
-    clear ITPCMean
-    ITPCMean.training = nanmean(ITPCtraining,2); % average channels; 
-    ITPCMean.testing = nanmean(ITPCtesting,2);
     % Save idx of training and testing trials 
     A3.all.trialsIdx.training(:,iPerm) = trainingTrials; 
     A3.all.trialsIdx.testing(:,iPerm) = testingTrials; 
+    A3.iters(iPerm) = iters; 
 
     %% --- Define initial search array ---
     nGrain = 100;

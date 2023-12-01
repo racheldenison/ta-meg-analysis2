@@ -1,4 +1,4 @@
-function rsq = calculateRSQ(y,y_fit,meanSub)
+function [rsq rsq2] = calculateRSQ(y,y_fit,meanSub)
 % function rsq = calculateRSQ(y,y_fit,meanSub)
 % y: real data 
 % y_fit: fitted data 
@@ -14,3 +14,7 @@ end
 SSres=sum(err.^2);
 SStot=sum((y-mean(y)).^2);
 rsq=1-(SSres./SStot);
+
+%% alt
+r = corrcoef(y,y_fit);
+rsq2 = r(2)^2; 
