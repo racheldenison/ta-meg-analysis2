@@ -1,12 +1,14 @@
-function [rsq rsq2] = calculateRSQ(y,y_fit,meanSub)
+function [rsq rsq2 y_fit_meanCorrected] = calculateRSQ(y,y_fit,meanSub)
 % function rsq = calculateRSQ(y,y_fit,meanSub)
 % y: real data 
 % y_fit: fitted data 
 % Calculate r-squared 
 
 if meanSub % mean subtraction 
-    meanDiff = mean(y_fit,'omitnan')-mean(y,'omitnan'); 
-    err = y-y_fit+meanDiff;  
+    meanDiff = mean(y,'omitnan')-mean(y_fit,'omitnan'); 
+    % err = y-y_fit+meanDiff;  
+    y_fit_meanCorrected = y_fit+meanDiff; 
+    err = y_fit_meanCorrected - y;  
 else
     err=y-y_fit;
 end
@@ -18,3 +20,4 @@ rsq=1-(SSres./SStot);
 %% alt
 r = corrcoef(y,y_fit);
 rsq2 = r(2)^2; 
+
