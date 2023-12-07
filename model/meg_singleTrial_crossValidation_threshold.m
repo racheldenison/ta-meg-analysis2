@@ -168,68 +168,77 @@ nonlcon = [];
 %% Calculate ITPC from split training testing data
 % A3 for analysis of split training testing data
 clear A3
-phaseAngle = squeeze(groupA(sessionIdx).all.phaseAngle); % trials (384) x ch (5) x time (7001)
+phaseAngle = squeeze(groupA(sessionIdx).all.phaseAngle); % trials (384) x ch (5) x time (7001) 
 nTrials = size(phaseAngle,1);
-nChannels = size(phaseAngle,2);
+nChannels = size(phaseAngle,2); 
 
 for iPerm = 1:nPermCV % permute splits for cross validation
     fprintf('Cross validation split %d of %d...',iPerm,nPermCV);
+    
+    threshold = 0.5;
+    iters = 0; 
+    rsq = 0; % default to 0
+    while rsq < threshold
+        if iters > 1000
+            break 
+        end
+        clear ITPCtraining ITPCtesting
+        idxRand = randperm(nTrials);
 
-    clear ITPCtraining ITPCtesting
-    idxRand = randperm(nTrials);
+        nTrialsTest = nTrials/2; % for split half
+        nTrialsTrain = nTrials - nTrialsTest;
 
-    nTrialsTest = 300; % nTrials/2; % for split half
-    nTrialsTrain = nTrials - nTrialsTest;
+        trainingTrials = idxRand(1:nTrialsTest);
+        testingTrials = idxRand(nTrialsTest+1:nTrials);
 
-    trainingTrials = idxRand(1:nTrialsTest);
-    testingTrials = idxRand(nTrialsTest+1:nTrials);
+        % Get phase angles by training & testing splits
+        for iCh = 1:nChannels
+            for iT = 1:2 % training, then testing
+                clear vals idxTrials
+                if iT==1 % training
+                    idxTrials = trainingTrials;
+                elseif iT==2 % testing
+                    idxTrials = testingTrials;
+                end
 
-    % Get phase angles by training & testing splits
-    for iCh = 1:nChannels
-        for iT = 1:2 % training, then testing
-            clear vals idxTrials
-            if iT==1 % training
-                idxTrials = trainingTrials;
-            elseif iT==2 % testing
-                idxTrials = testingTrials;
-            end
+                switch sessionDir
+                    case 'test'
+                        clear dummyData
+                        phase = phase1+(rand(1)*2);
+                        itpc = ((slope1/1000 * p.t) + intercept1)  + ( amplitude1 * sin( (freq*pi/(Fs/2)) * (p.t + phase * 100 )) );
+                    otherwise
+                        vals = squeeze(phaseAngle(idxTrials,iCh,:)); % trials (192) x time (7001)
+                        % Calculate ITPC from phase angles
+                        itpc = squeeze(abs(mean(exp(1i*vals),1,'omitnan')));
+                end
 
-            switch sessionDir
-                case 'test'
-                    clear dummyData
-                    phase = phase1+(rand(1)*2);
-                    itpc = ((slope1/1000 * p.t) + intercept1)  + ( amplitude1 * sin( (freq*pi/(Fs/2)) * (p.t + phase * 100 )) );
-                otherwise
-                    vals = squeeze(phaseAngle(idxTrials,iCh,:)); % trials (192) x time (7001)
-                    % Calculate ITPC from phase angles
-                    itpc = squeeze(abs(mean(exp(1i*vals),1,'omitnan')));
-            end
-
-            if iT==1
-                ITPCtraining(:,iCh) = itpc; % f x t x  ch
-            elseif iT==2
-                ITPCtesting(:,iCh) = itpc;
+                if iT==1
+                    ITPCtraining(:,iCh) = itpc; % f x t x  ch
+                elseif iT==2
+                    ITPCtesting(:,iCh) = itpc;
+                end
             end
         end
+
+        % Save ITPC by split halves, for model fit
+        % don't save, for efficiency?
+        % A3.all.ITPCMean.training(:,iPerm) = nanmean(ITPCtraining,2); % average channels
+        % A3.all.ITPCMean.testing(:,iPerm) = nanmean(ITPCtesting,2);
+        clear ITPCMean
+        ITPCMean.training = nanmean(ITPCtraining,2); % average channels;
+        ITPCMean.testing = nanmean(ITPCtesting,2);
+        
+        % Calculate R2 of training and testing splits 
+        y1 = ITPCMean.training(tIdx,:); 
+        y2 = ITPCMean.testing(tIdx,:); 
+        [rsq rsq2] = calculateRSQ(y1,y2,1);
+        [rsq_uncorr rsq_uncorr2] = calculateRSQ(y1,y2,0);
+        iters = iters+1; 
     end
-
-    % Save ITPC by split halves, for model fit
-    % don't save, for efficiency?
-    % A3.all.ITPCMean.training(:,iPerm) = nanmean(ITPCtraining,2); % average channels
-    % A3.all.ITPCMean.testing(:,iPerm) = nanmean(ITPCtesting,2);
-    clear ITPCMean
-    ITPCMean.training = nanmean(ITPCtraining,2); % average channels;
-    ITPCMean.testing = nanmean(ITPCtesting,2);
-
-    % Calculate R2 of training and testing splits
-    y1 = ITPCMean.training(tIdx,:);
-    y2 = ITPCMean.testing(tIdx,:);
-    [rsq rsq2] = calculateRSQ(y1,y2,1);
-    [rsq_uncorr rsq_uncorr2] = calculateRSQ(y1,y2,0);
-
-    % Save idx of training and testing trials
-    A3.all.trialsIdx.training(:,iPerm) = trainingTrials;
-    A3.all.trialsIdx.testing(:,iPerm) = testingTrials;
+    % Save idx of training and testing trials 
+    A3.all.trialsIdx.training(:,iPerm) = trainingTrials; 
+    A3.all.trialsIdx.testing(:,iPerm) = testingTrials; 
+    A3.iters(iPerm) = iters; 
 
     %% --- Define initial search array ---
     nGrain = 100;
