@@ -1,5 +1,5 @@
-function [mdlFit A3 A4] = meg_temporal_crossValidation(expt, sessionDir, user)
-% function meg_temporal_crossValidation(expt, sessionDir, user)
+function [mdlFit, A4] = meg_time_crossValidation(expt, sessionDir, user)
+% function meg_time_crossValidation(expt, sessionDir, user)
 % split half cross validation per session by time (first half v second
 % half) 
 
