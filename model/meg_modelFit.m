@@ -64,7 +64,7 @@ filename = sprintf('%s/%s_modelFits.mat',analDir,sessionDir); % analysis file na
 
 %% Analysis settings 
 % --- Model fit start coefficient perms ---
-nPerms = 2; % 10, 100
+nPerms = 100; % 10, 100
 nPermCV = 1; % inherited from split half cross validation
 
 % --- MEG settings --- 
