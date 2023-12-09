@@ -46,24 +46,25 @@ load(dataFile) % groupA (20 Hz filtered data), groupB (behavior)
 condNames = {'all'}; 
 nChannels = 5; 
 
+%% Output settings 
 % --- Figures --- 
 figFormat = 'png';
 
 dateStr = datetime('now','TimeZone','local','Format','yyMMdd');
-figDir = sprintf('%s/Group/figures/crossValidation/%s', exptDir, dateStr);
+figDir = sprintf('%s/Group/figures/modelFits/%s', exptDir, dateStr);
 if ~exist(figDir, 'dir')
     mkdir(figDir)
 end
 
-analDir = sprintf('%s/analysis/crossValidation/%s', pwd, dateStr);
+analDir = sprintf('%s/analysis/modelFits/%s', pwd, dateStr);
 if ~exist(analDir,'dir')
     mkdir(analDir)
 end
-filename = sprintf('%s/%s_crossValidation.mat',analDir,sessionDir); % analysis file name
+filename = sprintf('%s/%s_modelFits.mat',analDir,sessionDir); % analysis file name
 
 %% Analysis settings 
 % --- Model fit start coefficient perms ---
-nPerms = 100; % 10, 100
+nPerms = 2; % 10, 100
 nPermCV = 1; % inherited from split half cross validation
 
 % --- MEG settings --- 
@@ -71,24 +72,6 @@ p = meg_params('TANoise_ITPCsession8');
 
 % --- Timing and ITPC settings --- 
 tT = p.tstart:p.tstop;
-
-% taper          = 'hanning';
-% foi            = 20; % 100;
-% t_ftimwin      = 10 ./ foi;
-% toiT            = p.tstart/1000:0.01:p.tstop/1000; % toi for (T)rial 
-% tfAmps = []; tfAmpsAvg = [];
-% tfPows = []; tfPowsAvg = [];
-
-% padTotal = ceil(p.trialTime/p.fSample);
-% padPre = ceil((padTotal*p.fSample-p.trialTime)/2);
-% padPost = floor((padTotal*p.fSample-p.trialTime)/2);
-% toiPad = (p.tstart-padPre)/1000:0.01:(p.tstop+padPost)/1000;
-% tPad = p.tstart-padPre:p.tstop+padPost;
-% xtick = 1:80:numel(toiPad);
-% ytick = 10:10:numel(foi);
-% xlims = [size(toiT,1),size(toiT,2)];
-% Fsample = p.fSample;
-% width = 8;
 
 % --- Model fitting settings 
 freq = 2; % Hz, fixed frequency for model fit 
@@ -161,76 +144,8 @@ nonlcon = [];
 % --- Options --- 
 % options = optimoptions('fmincon','Display','iter'); 
 
-%% Calculate ITPC from split training testing data
-% A3 for analysis of split training testing data
-% clear A3
-% phaseAngle = squeeze(groupA(sessionIdx).all.phaseAngle); % trials (384) x ch (5) x time (7001) 
-% nTrials = size(phaseAngle,1);
-% nChannels = size(phaseAngle,2); 
-
-for iPerm = 1:nPermCV % permute splits for cross validation
-    % fprintf('Cross validation split %d of %d...',iPerm,nPermCV);
-    % 
-    % threshold = 0.5;
-    % iters = 0; 
-    % while rsq < threshold
-    %     clear ITPCtraining ITPCtesting
-    %     idxRand = randperm(nTrials);
-    % 
-    %     nTrialsTest = nTrials/2; % for split half
-    %     nTrialsTrain = nTrials - nTrialsTest;
-    % 
-    %     trainingTrials = idxRand(1:nTrialsTest);
-    %     testingTrials = idxRand(nTrialsTest+1:nTrials);
-    % 
-    %     % Get phase angles by training & testing splits
-    %     for iCh = 1:nChannels
-    %         for iT = 1:2 % training, then testing
-    %             clear vals idxTrials
-    %             if iT==1 % training
-    %                 idxTrials = trainingTrials;
-    %             elseif iT==2 % testing
-    %                 idxTrials = testingTrials;
-    %             end
-    % 
-    %             switch sessionDir
-    %                 case 'test'
-    %                     clear dummyData
-    %                     phase = phase1+(rand(1)*2);
-    %                     itpc = ((slope1/1000 * p.t) + intercept1)  + ( amplitude1 * sin( (freq*pi/(Fs/2)) * (p.t + phase * 100 )) );
-    %                 otherwise
-    %                     vals = squeeze(phaseAngle(idxTrials,iCh,:)); % trials (192) x time (7001)
-    %                     % Calculate ITPC from phase angles
-    %                     itpc = squeeze(abs(mean(exp(1i*vals),1,'omitnan')));
-    %             end
-    % 
-    %             if iT==1
-    %                 ITPCtraining(:,iCh) = itpc; % f x t x  ch
-    %             elseif iT==2
-    %                 ITPCtesting(:,iCh) = itpc;
-    %             end
-    %         end
-    %     end
-    % 
-    %     % Save ITPC by split halves, for model fit
-    %     % don't save, for efficiency?
-    %     % A3.all.ITPCMean.training(:,iPerm) = nanmean(ITPCtraining,2); % average channels
-    %     % A3.all.ITPCMean.testing(:,iPerm) = nanmean(ITPCtesting,2);
-    %     clear ITPCMean
-    %     ITPCMean.training = nanmean(ITPCtraining,2); % average channels;
-    %     ITPCMean.testing = nanmean(ITPCtesting,2);
-    % 
-    %     % Calculate R2 of training and testing splits 
-    %     y1 = ITPCMean.training(tIdx,:); 
-    %     y2 = ITPCMean.testing(tIdx,:); 
-    %     [rsq rsq2] = calculateRSQ(y1,y2,1);
-    %     [rsq_uncorr rsq_uncorr2] = calculateRSQ(y1,y2,0);
-    %     iters = iters+1; 
-    % end
-    % % Save idx of training and testing trials 
-    % A3.all.trialsIdx.training(:,iPerm) = trainingTrials; 
-    % A3.all.trialsIdx.testing(:,iPerm) = testingTrials; 
-    % A3.iters(iPerm) = iters; 
+%% Model fit with BADS 
+for iPerm = 1:nPermCV % permute splits for cross validation (inherited) 
 
     %% --- Define initial search array ---
     nGrain = 100;
@@ -244,11 +159,8 @@ for iPerm = 1:nPermCV % permute splits for cross validation
     %% Both model fits (linear, linear+2Hz)
     clear x0 x0Perm
     for iC = 1:numel(cueLevel)
-        clear dataFit dataTest
-        % dataFit = A3.(cueLevel{iC}).ITPCMean.training(tIdx,iPerm)'; % 1 x time (971), fit data on training partition
-        % dataTest = A3.(cueLevel{iC}).ITPCMean.testing(tIdx,iPerm)';
-        dataFit = squeeze(groupA(sessionIdx).all.ITPCMean(tIdx)); % ITPCMean.training(tIdx)';
-        % dataTest = ITPCMean.testing(tIdx)';
+        clear dataFit
+        dataFit = squeeze(groupA(sessionIdx).all.ITPCMean(tIdx))'; % ITPCMean.training(tIdx)';
 
         for iF = 1:numel(fitTypes)
             for iP = 1:nPerms % iP is optimization permutation start grid
@@ -303,10 +215,10 @@ for iPerm = 1:nPermCV % permute splits for cross validation
                 % --- Save error ---
                 mdlFit.(fitTypes{iF}).(cueLevel{iC}).(fitLevel).fval(iP) = fval;
                 % --- Calculate r squared --- 
-                clear E yhat rsq
-                [E,yhat] = meg_objectiveFunction1(solution,dataFit,t,Fs,paramNames,fitTypes{iF});
-                rsq = calculateRSQ(dataTest,yhat,1);
-                mdlFit.(fitTypes{iF}).(cueLevel{iC}).(fitLevel).rsq(iP) = rsq; 
+                % clear E yhat rsq
+                % [E,yhat] = meg_objectiveFunction1(solution,dataFit,t,Fs,paramNames,fitTypes{iF});
+                % rsq = calculateRSQ(dataFit,yhat,1);
+                % mdlFit.(fitTypes{iF}).(cueLevel{iC}).(fitLevel).rsq(iP) = rsq; 
                 % --- Save predicted y ---
                 % mdlFit.(fitTypes{iF}).(cueLevel{iC}).(fitLevel).yhat(iP,iS,:) = yhat;
             end % end the search permutation 
@@ -330,17 +242,14 @@ for iPerm = 1:nPermCV % permute splits for cross validation
             % --- Save R^2 ---
             % mdlFit.(fitTypes{iF}).(cueLevel{iC}).(fitLevel).minRsq = rsq;
             
-            %% Check fit on test partition --> R^2
-            % clear rsq
-            % rsq = calculateRSQ(dataTest,yhat,1);
-
             %% Save all
             d = numel(paramNames); 
-            [rsq rsq2 y_fit_meanCorrected adjrsq] = calculateRSQ(y,y_fit,1,d); 
+            [rsq rsq2 y_fit_meanCorrected adjrsq] = calculateRSQ(dataFit,yhat,1,d); 
             % rsq = calculateRSQ(dataFit,yhat,1);
             A4.(fitTypes{iF}).(cueLevel{iC}).rsq(iPerm) = rsq;
             A4.(fitTypes{iF}).(cueLevel{iC}).rsq2(iPerm) = rsq2; 
-            A4.(fitTypes{iF}).(cueLevel{iC}).y_fit_meanCorrected(iPerm) = y_fit_meanCorrected; 
+            A4.(fitTypes{iF}).(cueLevel{iC}).y_fit_meanCorrected(iPerm,:) = y_fit_meanCorrected; 
+            A4.(fitTypes{iF}).(cueLevel{iC}).y_fit_meanCorrected(iPerm,:) = yhat; 
             A4.(fitTypes{iF}).(cueLevel{iC}).adjrsq(iPerm) = adjrsq;
         end
     end
@@ -378,6 +287,7 @@ bar(2,mean(A4.linear2Hz.all.rsq),'FaceColor',[0.8500 0.3250 0.0980])
 errorbar(2,mean(A4.linear2Hz.all.rsq), std(A4.linear2Hz.all.rsq)/sqrt(nPermCV),'CapSize',0,'Color','k','LineWidth',1.5)
 xlim([0 3])
 xticks([1 2])
+ylim([-1 1])
 xticklabels({'Linear','Linear + 2Hz'})
 ylabel('R squared')
 
@@ -410,6 +320,7 @@ bar(2,mean(A4.linear2Hz.all.adjrsq),'FaceColor',[0.8500 0.3250 0.0980])
 errorbar(2,mean(A4.linear2Hz.all.adjrsq), std(A4.linear2Hz.all.adjrsq)/sqrt(nPermCV),'CapSize',0,'Color','k','LineWidth',1.5)
 xlim([0 3])
 xticks([1 2])
+ylim([-1 1])
 xticklabels({'Linear','Linear + 2Hz'})
 ylabel('R squared')
 
