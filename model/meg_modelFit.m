@@ -1,7 +1,6 @@
-function [mdlFit, A4] = meg_time_crossValidation(expt, sessionDir, user)
-% function meg_time_crossValidation(expt, sessionDir, user)
-% split half cross validation per session by time (first half v second
-% half) 
+function [mdlFit A4] = meg_modelFit(expt, sessionDir, user)
+% function meg_modelFit(expt, sessionDir, user)
+% Fits linear and 2Hz linear model on all trials 
 
 % Inputs:
 %   expt: 'TANoise'
@@ -63,10 +62,9 @@ end
 filename = sprintf('%s/%s_crossValidation.mat',analDir,sessionDir); % analysis file name
 
 %% Analysis settings 
-% --- Cross validation split half setttings ---
-nPermCV = 1; % 10, 100 
 % --- Model fit start coefficient perms ---
 nPerms = 100; % 10, 100
+nPermCV = 1; % inherited from split half cross validation
 
 % --- MEG settings --- 
 p = meg_params('TANoise_ITPCsession8');
@@ -164,23 +162,75 @@ nonlcon = [];
 % options = optimoptions('fmincon','Display','iter'); 
 
 %% Calculate ITPC from split training testing data
-phaseAngle = squeeze(groupA(sessionIdx).all.phaseAngle); % trials (384) x ch (5) x time (7001) 
-itpc = groupA(sessionIdx).all.ITPCMean(tIdx); 
-nTrials = size(phaseAngle,1);
-nChannels = size(phaseAngle,2); 
+% A3 for analysis of split training testing data
+% clear A3
+% phaseAngle = squeeze(groupA(sessionIdx).all.phaseAngle); % trials (384) x ch (5) x time (7001) 
+% nTrials = size(phaseAngle,1);
+% nChannels = size(phaseAngle,2); 
 
 for iPerm = 1:nPermCV % permute splits for cross validation
-    fprintf('Cross validation split %d of %d...',iPerm,nPermCV);
-
-    % Split half by time 
-    idxTraining = 1:floor(numel(tIdx)/2); % skips one time step 486 
-    idxTesting = ceil(numel(tIdx)/2)+1:numel(tIdx); 
-    
-    % Calculate R2 of training and testing splits
-    y1 = itpc(idxTraining)'; 
-    y2 = itpc(idxTesting)'; 
-    [rsq rsq2] = calculateRSQ(y1,y2,1);
-    [rsq_uncorr rsq_uncorr2] = calculateRSQ(y1,y2,0);
+    % fprintf('Cross validation split %d of %d...',iPerm,nPermCV);
+    % 
+    % threshold = 0.5;
+    % iters = 0; 
+    % while rsq < threshold
+    %     clear ITPCtraining ITPCtesting
+    %     idxRand = randperm(nTrials);
+    % 
+    %     nTrialsTest = nTrials/2; % for split half
+    %     nTrialsTrain = nTrials - nTrialsTest;
+    % 
+    %     trainingTrials = idxRand(1:nTrialsTest);
+    %     testingTrials = idxRand(nTrialsTest+1:nTrials);
+    % 
+    %     % Get phase angles by training & testing splits
+    %     for iCh = 1:nChannels
+    %         for iT = 1:2 % training, then testing
+    %             clear vals idxTrials
+    %             if iT==1 % training
+    %                 idxTrials = trainingTrials;
+    %             elseif iT==2 % testing
+    %                 idxTrials = testingTrials;
+    %             end
+    % 
+    %             switch sessionDir
+    %                 case 'test'
+    %                     clear dummyData
+    %                     phase = phase1+(rand(1)*2);
+    %                     itpc = ((slope1/1000 * p.t) + intercept1)  + ( amplitude1 * sin( (freq*pi/(Fs/2)) * (p.t + phase * 100 )) );
+    %                 otherwise
+    %                     vals = squeeze(phaseAngle(idxTrials,iCh,:)); % trials (192) x time (7001)
+    %                     % Calculate ITPC from phase angles
+    %                     itpc = squeeze(abs(mean(exp(1i*vals),1,'omitnan')));
+    %             end
+    % 
+    %             if iT==1
+    %                 ITPCtraining(:,iCh) = itpc; % f x t x  ch
+    %             elseif iT==2
+    %                 ITPCtesting(:,iCh) = itpc;
+    %             end
+    %         end
+    %     end
+    % 
+    %     % Save ITPC by split halves, for model fit
+    %     % don't save, for efficiency?
+    %     % A3.all.ITPCMean.training(:,iPerm) = nanmean(ITPCtraining,2); % average channels
+    %     % A3.all.ITPCMean.testing(:,iPerm) = nanmean(ITPCtesting,2);
+    %     clear ITPCMean
+    %     ITPCMean.training = nanmean(ITPCtraining,2); % average channels;
+    %     ITPCMean.testing = nanmean(ITPCtesting,2);
+    % 
+    %     % Calculate R2 of training and testing splits 
+    %     y1 = ITPCMean.training(tIdx,:); 
+    %     y2 = ITPCMean.testing(tIdx,:); 
+    %     [rsq rsq2] = calculateRSQ(y1,y2,1);
+    %     [rsq_uncorr rsq_uncorr2] = calculateRSQ(y1,y2,0);
+    %     iters = iters+1; 
+    % end
+    % % Save idx of training and testing trials 
+    % A3.all.trialsIdx.training(:,iPerm) = trainingTrials; 
+    % A3.all.trialsIdx.testing(:,iPerm) = testingTrials; 
+    % A3.iters(iPerm) = iters; 
 
     %% --- Define initial search array ---
     nGrain = 100;
@@ -195,8 +245,10 @@ for iPerm = 1:nPermCV % permute splits for cross validation
     clear x0 x0Perm
     for iC = 1:numel(cueLevel)
         clear dataFit dataTest
-        dataFit = y1;
-        dataTest = y2;
+        % dataFit = A3.(cueLevel{iC}).ITPCMean.training(tIdx,iPerm)'; % 1 x time (971), fit data on training partition
+        % dataTest = A3.(cueLevel{iC}).ITPCMean.testing(tIdx,iPerm)';
+        dataFit = squeeze(groupA(sessionIdx).all.ITPCMean(tIdx)); % ITPCMean.training(tIdx)';
+        % dataTest = ITPCMean.testing(tIdx)';
 
         for iF = 1:numel(fitTypes)
             for iP = 1:nPerms % iP is optimization permutation start grid
@@ -218,7 +270,7 @@ for iPerm = 1:nPermCV % permute splits for cross validation
                         paramNames = {'intercept','slope','amplitude','phase'};
                         % --- Define objective function ---
                         clear fun
-                        fun = @(x)meg_objectiveFunction1(x,dataFit,idxTraining,Fs,paramNames,fitTypes{iF},freq);
+                        fun = @(x)meg_objectiveFunction1(x,dataFit,p.t(tIdx),Fs,paramNames,fitTypes{iF},freq);
                         % --- Do fit ---
                         if o_bads
                             [solution,fval,exitflag,output] = bads(fun, x0, mdlFit.hardlb, mdlFit.hardub, mdlFit.lb, mdlFit.ub,[],optionsBads);
@@ -233,7 +285,7 @@ for iPerm = 1:nPermCV % permute splits for cross validation
                         paramNames = {'intercept','slope'};
                         % --- Define objective function ---
                         clear fun
-                        fun = @(x)meg_objectiveFunction1(x,dataFit,idxTraining,Fs,paramNames,fitTypes{iF});
+                        fun = @(x)meg_objectiveFunction1(x,dataFit,p.t(tIdx),Fs,paramNames,fitTypes{iF});
                         idx = 1:numel(paramNames);
                         % --- Do fit ---
                         if o_bads
@@ -252,16 +304,12 @@ for iPerm = 1:nPermCV % permute splits for cross validation
                 mdlFit.(fitTypes{iF}).(cueLevel{iC}).(fitLevel).fval(iP) = fval;
                 % --- Calculate r squared --- 
                 clear E yhat rsq
-                [E,yhat] = meg_objectiveFunction1(solution,dataTest,idxTesting,Fs,paramNames,fitTypes{iF});
-
+                [E,yhat] = meg_objectiveFunction1(solution,dataFit,t,Fs,paramNames,fitTypes{iF});
                 rsq = calculateRSQ(dataTest,yhat,1);
-                mdlFit.(fitTypes{iF}).(cueLevel{iC}).(fitLevel).rsq(iP) = rsq;
+                mdlFit.(fitTypes{iF}).(cueLevel{iC}).(fitLevel).rsq(iP) = rsq; 
                 % --- Save predicted y ---
                 % mdlFit.(fitTypes{iF}).(cueLevel{iC}).(fitLevel).yhat(iP,iS,:) = yhat;
-                % -- Save data ---
-                mdlFit.(fitTypes{iF}).(cueLevel{iC}).(fitLevel).dataFit = dataFit;
-                mdlFit.(fitTypes{iF}).(cueLevel{iC}).(fitLevel).dataTest = dataTest;
-            end % end the search permutation
+            end % end the search permutation 
 
             % --- Find permutation with minimum fval --- 
             [minVal,idx] = min(  mdlFit.(fitTypes{iF}).(cueLevel{iC}).(fitLevel).fval(:)  );
@@ -276,40 +324,36 @@ for iPerm = 1:nPermCV % permute splits for cross validation
                 case 'linear'
                     paramNames = {'intercept','slope'};
             end
-            % --- Save yhat --- 
-            [E,yhat] = meg_objectiveFunction1(fittedX,dataFit,idxTraining,Fs,paramNames,fitTypes{iF},freq);
-            mdlFit.(fitTypes{iF}).(cueLevel{iC}).(fitLevel).yhat = yhat;
-            % --- Save R^2 ---
-            [rsq rsq2 y_fit_meanCorrected] = calculateRSQ(dataTest,yhat,1);
-            mdlFit.(fitTypes{iF}).(cueLevel{iC}).(fitLevel).minRsq = rsq;
-            mdlFit.(fitTypes{iF}).(cueLevel{iC}).(fitLevel).minRsq2 = rsq2;
-            mdlFit.(fitTypes{iF}).(cueLevel{iC}).(fitLevel).y_fit_meanCorrected = y_fit_meanCorrected;
-            [rsq_uncorr rsq2_uncorr] = calculateRSQ(dataTest,yhat,0);
-            mdlFit.(fitTypes{iF}).(cueLevel{iC}).(fitLevel).minRsq_uncorr = rsq_uncorr;
-            mdlFit.(fitTypes{iF}).(cueLevel{iC}).(fitLevel).minRsq2_uncorr = rsq2_uncorr;
-            % rsq = calculateRSQ(dataFit,yhat,1);
+            [E,yhat] = meg_objectiveFunction1(fittedX,dataFit,p.t(tIdx),Fs,paramNames,fitTypes{iF},freq);
             % txt = sprintf('Rsq = %0.2f...',rsq);
             % disp(txt)
+            % --- Save R^2 ---
+            % mdlFit.(fitTypes{iF}).(cueLevel{iC}).(fitLevel).minRsq = rsq;
             
             %% Check fit on test partition --> R^2
             % clear rsq
             % rsq = calculateRSQ(dataTest,yhat,1);
 
             %% Save all
+            d = numel(paramNames); 
+            [rsq rsq2 y_fit_meanCorrected adjrsq] = calculateRSQ(y,y_fit,1,d); 
+            % rsq = calculateRSQ(dataFit,yhat,1);
             A4.(fitTypes{iF}).(cueLevel{iC}).rsq(iPerm) = rsq;
-            A4.(fitTypes{iF}).(cueLevel{iC}).rsq_uncorr(iPerm) = rsq_uncorr;
+            A4.(fitTypes{iF}).(cueLevel{iC}).rsq2(iPerm) = rsq2; 
+            A4.(fitTypes{iF}).(cueLevel{iC}).y_fit_meanCorrected(iPerm) = y_fit_meanCorrected; 
+            A4.(fitTypes{iF}).(cueLevel{iC}).adjrsq(iPerm) = adjrsq;
         end
     end
     %% Save analyses into temp file 
-    newTempFile = sprintf('%s/%s_temporalCrossValidation_perms%d.mat',analDir,sessionDir,iPerm);
-    save(newTempFile,'mdlFit','A4','-v7.3')
+    newTempFile = sprintf('%s/%s_mdlFit_allTrials_%d.mat',analDir,sessionDir,iPerm);
+    save(newTempFile,'mdlFit','-v7.3')
     if iPerm>1
-        tempFile = sprintf('%s/%s_crossValidation_perms%d.mat',analDir,sessionDir,iPerm-1);
+        tempFile = sprintf('%s/%s_mdlFit_allTrials%d.mat',analDir,sessionDir,iPerm-1);
         delete(tempFile)
     end
 end % end CV splits 
 
-%% Plot histogram
+%% Plot histogram R2 
 figure
 set(gcf,'Position',[100 100 400 370])
 sgtitle(und2space(sessionDir))
@@ -329,18 +373,49 @@ subplot 122
 hold on
 meg_figureStyle
 bar(1,mean(A4.linear.all.rsq),'FaceColor',[0 0.4470 0.7410])
-errorbar(1,mean(A4.linear.all.rsq), std(A4.linear.all.rsq)/sqrt(20),'CapSize',0,'Color','k','LineWidth',1.5)
+errorbar(1,mean(A4.linear.all.rsq), std(A4.linear.all.rsq)/sqrt(nPermCV),'CapSize',0,'Color','k','LineWidth',1.5)
 bar(2,mean(A4.linear2Hz.all.rsq),'FaceColor',[0.8500 0.3250 0.0980])
-errorbar(2,mean(A4.linear2Hz.all.rsq), std(A4.linear2Hz.all.rsq)/sqrt(20),'CapSize',0,'Color','k','LineWidth',1.5)
+errorbar(2,mean(A4.linear2Hz.all.rsq), std(A4.linear2Hz.all.rsq)/sqrt(nPermCV),'CapSize',0,'Color','k','LineWidth',1.5)
 xlim([0 3])
 xticks([1 2])
 xticklabels({'Linear','Linear + 2Hz'})
 ylabel('R squared')
 
 % --- Save fig ---
-figTitle = sprintf('%s_TANoise_TemporalCrossValidation',sessionDir);
+figTitle = sprintf('%s_TANoise_allTrialsMdlFit_R2',sessionDir);
 saveas(gcf,sprintf('%s/%s.%s', figDir, figTitle, figFormat))
 
+%% Plot histogram adjusted R2 
+figure
+set(gcf,'Position',[100 100 400 370])
+sgtitle(und2space(sessionDir))
+
+edges = -1:0.1:1; 
+subplot 121
+hold on
+meg_figureStyle
+histogram(A4.linear.all.adjrsq,edges)
+histogram(A4.linear2Hz.all.adjrsq,edges)
+xlabel('R squared')
+ylabel('Count')
+l = legend('Linear','Linear + 2Hz');
+l.FontSize = 9;
+
+subplot 122
+hold on
+meg_figureStyle
+bar(1,mean(A4.linear.all.adjrsq),'FaceColor',[0 0.4470 0.7410])
+errorbar(1,mean(A4.linear.all.adjrsq), std(A4.linear.all.adjrsq)/sqrt(nPermCV),'CapSize',0,'Color','k','LineWidth',1.5)
+bar(2,mean(A4.linear2Hz.all.adjrsq),'FaceColor',[0.8500 0.3250 0.0980])
+errorbar(2,mean(A4.linear2Hz.all.adjrsq), std(A4.linear2Hz.all.adjrsq)/sqrt(nPermCV),'CapSize',0,'Color','k','LineWidth',1.5)
+xlim([0 3])
+xticks([1 2])
+xticklabels({'Linear','Linear + 2Hz'})
+ylabel('R squared')
+
+% --- Save fig ---
+figTitle = sprintf('%s_TANoise_allTrialsMdlFit_adjR2',sessionDir);
+saveas(gcf,sprintf('%s/%s.%s', figDir, figTitle, figFormat))
 
 %% Save A4
 save(filename,'mdlFit','A4','-v7.3')
