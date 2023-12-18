@@ -14,7 +14,7 @@ titleVis = 0; % if title vis off, then will plot for appropriate manuscript size
 showN = 1; % show n = X annotation 
 figFormat = 'svg'; % svg 
 plotErrorBars = 1; % turn off for subject-level plots 
-restrictYLim = 0; % turn on for group-level manuscript matching ylims 
+restrictYLim = 1; % turn on for group-level manuscript matching ylims 
 plotPrePrecue = 0; % bar showing pre-precue baseline period 
 saveFigs = 1; 
 cueLevel = {'cueT1','cueT2'}; 
@@ -45,8 +45,8 @@ for iF = 1:numel(fitTypes)
         meg_figureStyle
         xlim([-300 2400]); % xlim([-100 2400])
         if restrictYLim
-            ylim([0.25 0.4])
-            yticks(0.25:0.05:0.4)
+            ylim([0.26 0.4])
+            yticks(0.26:0.02:0.4)
         end
         xlabel('Time (ms)')
         ylabel('ITPC')
