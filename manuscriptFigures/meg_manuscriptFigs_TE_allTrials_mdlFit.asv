@@ -10,9 +10,7 @@ showN = 1; % show n = X annotation
 figFormat = 'svg'; % svg 
 plotErrorBars = 1; % turn off for subject-level plots 
 restrictYLim = 0; % turn on for group-level manuscript matching ylims 
-plotPrePrecue = 0; % bar showing pre-precue baseline period 
 saveFigs = 1; 
-cueLevel = {'all'}; 
 
 % Figure directory 
 user = 'kantian'; 
@@ -32,7 +30,6 @@ for iF = 1:numel(fitTypes)
             otherwise
                 error('Specify session- or subject-level fit')
         end
-        fh = subplot(1,1,1);
         hold on
 
         % --- Format ---
@@ -45,6 +42,30 @@ for iF = 1:numel(fitTypes)
         end
         xlabel('Time (ms)')
         ylabel('ITPC')
+
+        % --- Plot event lines ---
+        p.eventNamesCap = {'Precue','T1','T2','Response cue'};
+        % p.eventNamesCap{1} = sprintf('Precue T1\nPrecue T2');
+        for i = 1:numel(p.eventTimes)
+            xh = xline(p.eventTimes(i),'Color',[0.5 0.5 0.5],'LineWidth',1);
+            meg_sendToBack(xh)
+            hold on
+            % --- Plot event names ---
+            if i==1 % Color the precue
+                % Precue T1
+                yOffset = diff(fh.YLim)*0.07;
+                txt = text(p.eventTimes(i),max(fh.YLim)+yOffset,'Precue T1','EdgeColor','none',...
+                    'FontSize',14,'HorizontalAlignment','center','VerticalAlignment','Bottom');
+                txt.Color = colors.mediumBlue;
+                % Precue T2
+                txt = text(p.eventTimes(i),max(fh.YLim),'Precue T2','EdgeColor','none',...
+                    'FontSize',14,'HorizontalAlignment','center','VerticalAlignment','Bottom');
+                txt.Color = colors.mediumRed;
+            else
+                text(p.eventTimes(i),max(fh.YLim),p.eventNamesCap{i},'EdgeColor','none',...
+                    'FontSize',14,'HorizontalAlignment','center','VerticalAlignment','Bottom');
+            end
+        end
 
         for iC = 1:numel(cueLevel)
             % --- Plot data error bars ---
@@ -110,12 +131,6 @@ for iF = 1:numel(fitTypes)
             switch fitTypes{iF}
                 case 'linear2Hz'
                     paramNames = {'intercept','slope','amplitude','phase','freq'};
-                    % --- Annotate fitted frequency ---
-                    fStr = sprintf('%0.2f Hz',fittedX(:,:,strcmp(paramNames,'freq')) );
-                    fStrTxt = text(30+p.eventTimes(1),yl(1)+0.003,fStr,'HorizontalAlignment','left','VerticalAlignment','bottom');
-                    fStrTxt.FontSize = 14;
-                    fStrTxt.FontName = 'Helvetica-Light';
-                    fStrTxt.Color = colors.darkPurple; 
                 case 'linear'
                     paramNames = {'intercept','slope'};
             end
@@ -137,11 +152,9 @@ for iF = 1:numel(fitTypes)
         % plot([x(1) x(2)],[y(1) y(1)],'Color',mediumgrey,'LineWidth',30)
 
         % --- Plot pre-precue baseline check ---
-        if plotPrePrecue
-            x = [p.t(tIdx(1))-100 p.t(tIdx(1)) p.t(tIdx(1)) p.t(tIdx(1))-100];
-            y = [yl(1) yl(1) yl(1)+ySize yl(1)+ySize];
-            patch(x,y,colors.lightgrey,'EdgeColor',colors.lightgrey)
-        end
+        x = [p.t(tIdx(1))-100 p.t(tIdx(1)) p.t(tIdx(1)) p.t(tIdx(1))-100];
+        y = [yl(1) yl(1) yl(1)+ySize yl(1)+ySize];
+        patch(x,y,colors.lightgrey,'EdgeColor',colors.lightgrey)
 
         if showN
             % --- Add n annotation ---
@@ -153,29 +166,6 @@ for iF = 1:numel(fitTypes)
 
         % set(gca,'children',flipud(get(gca,'children'))) % change order of plotted objects
         set(gca ,'Layer', 'Top') % bring axes to front
-
-        % --- Plot event lines ---
-        p.eventNamesCap = {'Precue','T1','T2','Response cue'};
-        for i = 1:numel(p.eventTimes)
-            xh = xline(p.eventTimes(i),'Color',[0.5 0.5 0.5],'LineWidth',1);
-            meg_sendToBack(xh)
-            hold on
-            % --- Plot event names ---
-            if i==1 % Color the precue
-                % Precue (all trials)
-                ySet = max(fh.YLim)+(diff(fh.YLim)*0.01); 
-                txtName = sprintf('Precue\n(All trials)'); 
-                txt = text(p.eventTimes(i),ySet,txtName,'EdgeColor','none',...
-                    'FontSize',14,'HorizontalAlignment','left','VerticalAlignment','Bottom');
-                txt.Color = colors.darkPurple;
-            elseif i==4 % Response cue 
-                text(p.eventTimes(i),ySet,p.eventNamesCap{i},'EdgeColor','none',...
-                    'FontSize',14,'HorizontalAlignment','right','VerticalAlignment','Bottom');
-            else
-                text(p.eventTimes(i),ySet,p.eventNamesCap{i},'EdgeColor','none',...
-                    'FontSize',14,'HorizontalAlignment','center','VerticalAlignment','Bottom');
-            end
-        end
 
         % --- Titles --
         if titleVis
@@ -211,7 +201,7 @@ for iF = 1:numel(fitTypes)
 
         % --- Save fig ---
         if saveFigs
-            figTitle = sprintf('meg_manuscriptFigs_TE_allTrials_mdlFit_%s_%s',fitTypes{iF},dateStr); 
+            figTitle = sprintf('meg_manuscriptFigs_TE_allTrials_mdlFit_%s',dateStr); 
             saveas(gcf,sprintf('%s/%s.%s', figDir, figTitle, figFormat))
         end
     end
