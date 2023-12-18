@@ -75,16 +75,19 @@ for iC = 1:numel(cueLevel)
                 t_plot = p.t(sampling);
                 line_allTrials = shadedErrorBar(t_plot, groupVals(sampling), sed(sampling),...
                     'lineProps', {'MarkerFaceColor',p.cueColors(iC,:), 'LineWidth', 0.2, 'Color',p.cueColors(iC,:)}, 'transparent',1);
-                % line_allTrials.patch.FaceColor = colors.(cLight);
+                % line_allTrials.patch.FaceColor = colors.(cLight); p.cueColors(iC,:)
                 line_allTrials.patch.FaceAlpha = 0.3;
                 for iL = 1:2
                     line_allTrials.edge(iL).Color = colors.(cLight);
-                    line_allTrials.edge(iL).LineWidth = 1;
+                    line_allTrials.edge(iL).LineWidth = style.ebLineWidth;
                 end
         end
     end
+end
 
-    % --- Plot data ---
+for iC = 1:numel(cueLevel)
+    groupVals = mean(A.(cueLevel{iC}).normSubjectFlipped(20,:,includeIdx),3,'omitnan');
+    % --- Plot data (on top) ---
     plot(p.t(sampling),groupVals(sampling),'LineWidth',2,'Color',p.cueColors(iC,:))
 end
 
