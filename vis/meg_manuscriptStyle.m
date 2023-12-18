@@ -6,6 +6,8 @@ style.widthTS = 470;
 style.widthScatter = 300; 
 style.height = 300; 
 
+style.ebLineWidth = 0.2; % line width of shaded error bar edges 
+
 % scatterplots 
 style.xBuffer = 1; 
 
