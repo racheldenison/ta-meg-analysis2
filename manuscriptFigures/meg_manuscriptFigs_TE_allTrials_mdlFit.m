@@ -2,7 +2,9 @@ function meg_manuscriptFigs_TE_allTrials_mdlFit
 % Plot ITPC all trials with model fits (linear, and linear+periodic)
 
 %% Load data
-load('/Users/kantian/Dropbox/github/ta-meg-analysis-model/model_anticipatory/ModelFit_1_freeFreq_GroupTS_231102.mat')
+user = 'kantian'; 
+filename = sprintf('/Users/%s/Dropbox/github/ta-meg-analysis-model/model_anticipatory/ModelFit_1_freeFreq_GroupTS_231102.mat',user); 
+load(filename)
 
 %% Figure settings 
 titleVis = 0; % if title vis off, then will plot for appropriate manuscript size 
@@ -80,7 +82,7 @@ for iF = 1:numel(fitTypes)
                         line_allTrials.patch.FaceAlpha = 1;
                         for iL = 1:2
                             line_allTrials.edge(iL).Color = colors.mediumPurple;
-                            line_allTrials.edge(iL).LineWidth = 0.2;
+                            line_allTrials.edge(iL).LineWidth = style.ebLineWidth;
                         end
                         % case 'EB-fit'
                         %     t = p.t(toi);
@@ -216,3 +218,6 @@ for iF = 1:numel(fitTypes)
         end
     end
 end
+
+
+
