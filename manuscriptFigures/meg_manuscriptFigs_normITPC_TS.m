@@ -3,7 +3,7 @@
 %% Settings
 titleVis = 0; % if title vis off, then will plot for appropriate manuscript size 
 showN = 1; % show n = X annotation 
-figFormat = 'eps'; % svg 
+figFormat = 'svg'; % svg 
 plotErrorBars = 1; % turn off for subject-level plots 
 restrictYLim = 0; % turn on for group-level manuscript matching ylims 
 saveFigs = 1; 
@@ -117,16 +117,20 @@ for i = 1:numel(p.eventTimes)
     if i==1 % Color the precue
         % Precue T1
         yOffset = diff(fh.YLim)*0.07;
-        txt = text(p.eventTimes(i),max(fh.YLim)+yOffset,'Precue T1','EdgeColor','none',...
-            'FontSize',14,'HorizontalAlignment','center','VerticalAlignment','Bottom');
+        ySet = max(fh.YLim)+(diff(fh.YLim)*0.01); 
+        txt = text(p.eventTimes(i),ySet+yOffset,'Precue T1','EdgeColor','none',...
+            'FontSize',14,'HorizontalAlignment','left','VerticalAlignment','Bottom');
         txt.Color = colors.mediumBlue;
         % Precue T2
-        txt = text(p.eventTimes(i),max(fh.YLim),'Precue T2','EdgeColor','none',...
-            'FontSize',14,'HorizontalAlignment','center','VerticalAlignment','Bottom');
+        txt = text(p.eventTimes(i),ySet,'Precue T2','EdgeColor','none',...
+            'FontSize',14,'HorizontalAlignment','left','VerticalAlignment','Bottom');
         txt.Color = colors.mediumRed;
+    elseif i==4 % Response cue
+        text(p.eventTimes(i),ySet,p.eventNamesCap{i},'EdgeColor','none',...
+            'FontSize',14,'HorizontalAlignment','right','VerticalAlignment','Bottom');
     else
-            text(p.eventTimes(i),max(fh.YLim),p.eventNamesCap{i},'EdgeColor','none',...
-        'FontSize',14,'HorizontalAlignment','center','VerticalAlignment','Bottom');
+        text(p.eventTimes(i),ySet,p.eventNamesCap{i},'EdgeColor','none',...
+            'FontSize',14,'HorizontalAlignment','center','VerticalAlignment','Bottom');
     end
 end
 
