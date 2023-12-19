@@ -185,7 +185,7 @@ for iF = 1:numel(fitTypes)
         p.eventNamesCap = {'Precue','T1','T2','Response cue'};
         % p.eventNamesCap{1} = sprintf('Precue T1\nPrecue T2');
         for i = 1:numel(p.eventTimes)
-            xh = xline(p.eventTimes(i),'Color',[0.5 0.5 0.5],'LineWidth',1);
+            xh = xline(p.eventTimes(i),'Color',colors.eventLines,'LineWidth',1);
             meg_sendToBack(xh)
             hold on
             % --- Plot event names ---

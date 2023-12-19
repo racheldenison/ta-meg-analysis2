@@ -38,6 +38,8 @@ colors.precueRed = [225 124 96]/255;
 % 
 colors.green = [53,128,55]/255; 
 
+colors.eventLines = [0.5 0.5 0.5]; 
+
 %% Text size 
 style.txtSize_Annotation = 10; 
 
