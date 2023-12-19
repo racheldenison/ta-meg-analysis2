@@ -121,10 +121,7 @@ xlim([1-style.xBuffer/1.5 3+style.xBuffer/1.5])
 
 % Stats annotation
 if annotateStats
-    txt = text(2,max(fh.YLim),'n.s.','EdgeColor','none',...
-        'FontSize',14,'HorizontalAlignment','center','VerticalAlignment','Bottom','FontName','Helvetica');
-    % txt = text(2,max(fh.YLim)*0.95,'**','EdgeColor','none',...
-    %     'FontSize',30,'HorizontalAlignment','center','VerticalAlignment','Bottom','FontName','Times');
+    txt = meg_annotateStats(2.03,max(fh.YLim),'ns'); 
 end
 
 if saveFigs

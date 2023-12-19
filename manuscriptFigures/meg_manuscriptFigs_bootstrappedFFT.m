@@ -86,30 +86,6 @@ end
 %% Plot group averaged fft
 meanF = mean(f,1,'omitnan'); 
 meanAmp = mean(amp,1,'omitnan'); 
-% 
-% figure
-% subplot 121
-% hold on
-% meg_figureStyle
-% plot(meanF,meanAmp,'LineWidth',2,'Color',p.cueColors(1,:))
-% ylabel('Amplitude')
-% xlabel('Frequency (Hz)')
-% xlim([0 5])
-% 
-% subplot 122
-% hold on
-% meg_figureStyle
-% plot(log(meanF),log(meanAmp),'LineWidth',2,'Color',p.cueColors(1,:))
-% ylabel('Log(Amplitude)')
-% xlabel('Log(Frequency) (Hz)')
-% xlim([0 5])
-% 
-% sgtitle(sprintf('FFT Group n = %d',nSessions))
-% figTitle = sprintf('TANoise_ITPCFit_Separate_FFT_group_n%d',nSessions);
-% 
-% if saveFigs
-%     saveas(gcf,sprintf('%s/%s.png', figDir, figTitle))
-% end
 
 %% Bootstrap ITPC FFTs 
 nBoot = 1000; 
@@ -164,14 +140,14 @@ set(gcf,'Position',[100 100 312 300])
 bootColor = [0.8 0.8 0.8]; 
 
 % --- Plot log f x log amp --- 
-subplot 111
+fh = subplot (1,1,1); 
 hold on
 meg_figureStyle
 logf = log(f); 
 plot(logf,log(mean(dataBootGroup,2,'omitnan')),'LineWidth',0.5,'Color',bootColor) % bootstrapped data mean
 plot(logf,pLowBootLog,'LineWidth',0.3,'Color',bootColor) % bootstrapped data 5th percentile 
 plot(logf,pHighBootLog,'LineWidth',0.3,'Color',bootColor) % bootstrapped data 95th percentile
-pl(1) = patch([logf(2:end) fliplr(logf(2:end))], [pLowBootLog(2:end) fliplr(pHighBootLog(2:end))],bootColor,'EdgeColor',bootColor,'DisplayName','95% CI Bootstrapped FFT'); % shade bootstrapped 5-95th percentile
+pl(1) = patch([logf(2:end) fliplr(logf(2:end))], [pLowBootLog(2:end) fliplr(pHighBootLog(2:end))],bootColor,'EdgeColor',bootColor,'DisplayName','95% CI bootstrapped FFT'); % shade bootstrapped 5-95th percentile
 pl(2) = plot(log(meanF),log(meanAmp),'LineWidth',1,'Color','k','DisplayName','Data FFT'); % real data
 ylabel('Log (amplitude)')
 xlabel('Frequency (Hz)')
@@ -180,13 +156,18 @@ xl = xlim;
 yl = ylim;
 % Plot vertical lines at returned integers
 for i = 2:7
-    xline(logf(i),'Color',colors.eventLines)
+    xh = xline(logf(i),'Color',colors.eventLines); 
     tick(i) = logf(i);
+    meg_sendToBack(xh)
+    if annotateStats
+        txt = meg_annotateStats(tick(i),max(fh.YLim)*1.05,'*'); 
+    end
 end
 % xline(logf(20)) % check 20 Hz
 % xline(logf(60)) % check line noise?
-xticks(tick(2:7))
-xticklabels(1:6)
+xticks([tick(2:7) logf(fStart+1) logf(fEnd+1)])
+xticklabels([1:6 fStart fEnd])
+xtickangle(0)
 
 % Linear fit to log-log 1/f 
 x = [log(meanF(fStart_idx)) log(meanF(fEnd_idx))];
@@ -196,9 +177,9 @@ intercept = fitP(2);
 x = log(meanF(fStart_idx:fEnd_idx));
 y = fitP(1)*x + fitP(2); 
 rLine = refline(fitP(1),fitP(2));
-rLine.Color = p.cueColors(1,:);
+rLine.Color = colors.green;
 rLine.LineStyle = '-';
-plot(x,y,'b','LineWidth',1.5)
+pl(3) = plot(x,y,'Color',colors.green,'LineWidth',1.5,'DisplayName','1/f fit'); 
 
 if showN
     % --- Add n annotation ---
@@ -209,7 +190,7 @@ if showN
 end
 
 if showLegend
-    lgd = legend(pl(1:2));
+    lgd = legend(pl(1:3));
     lgd.FontSize = 10; 
     lgd.Box = 'off'; 
 end
