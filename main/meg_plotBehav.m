@@ -1,25 +1,19 @@
 function meg_plotBehav(expt, user)
-
 % function meg_plotBehav(expt, user)
-% plots sensitivity, accuracy, and rt by condition by axis tilt (optional) 
+% plots d',c, accuracy, and rt by precue condition and axis tilt (optional) 
 %
 % INPUTS
-% expt
-%   string, 'TA2' or 'TANoise'
-% user (optional)
-%   string giving the user name to determine path to save figures
-%
-% Karen Tian
-% May 2020
+% expt: string, 'TA2' or 'TANoise'
+% user (optional): string, user name to determine path to save figures
 
 %% inputs
 expt = 'TANoise'; % TANoise 
-user = 'karen'; % for file path to save figures ß
+user = 'karenlab'; % for file path to save figures ß
 plotAxis = 1; % slice by axis orientation 
 saveFigs = 1; % saves .svg to current directory 
 
 %% setup
-[sessionNames,subjectNames] = meg_sessions(expt); 
+[sessionNames,subjectNames,ITPCsubject,ITPCsession]  = meg_sessions(expt); 
 targets = {'T1','T2'}; 
 p = meg_params(sprintf('%s_Analysis',expt)); 
 
@@ -29,8 +23,8 @@ for i = 1:numel(sessionNames)
     [A, D, selectedChannels, I, B] = meg_runAnalysis(expt, sessionNames{i}, user); 
     disp(sessionNames{i})
     % make group 
-    groupDAll(i).slice = 'cue'; 
-    groupDAll(i).D = D; 
+    % groupDAll(i).slice = 'cue'; 
+    % groupDAll(i).D = D; 
     groupDAll(i).I = I; 
     groupDAll(i).B = B; 
 end
@@ -110,11 +104,17 @@ for iT = 1:numel(targets)
             hit(hit==0) = 0.01; 
             fa(fa==1) = 0.99; 
             fa(fa==0) = 0.01;
-            
+
             groupB.(targets{iT}).(fields{iF}).sessionDprime = norminv(hit) - norminv(fa); 
             groupB.(targets{iT}).(fields{iF}).subjectDprime(:,countSubject) = nanmean(norminv(hit(:,i:i+1)) - norminv(fa(:,i:i+1)));
             groupB.(targets{iT}).(fields{iF}).dPrime = nanmean(groupB.(targets{iT}).(fields{iF}).subjectDprime);
             groupB.(targets{iT}).(fields{iF}).dPrimeSte = nanstd(groupB.(targets{iT}).(fields{iF}).subjectDprime)/sqrt(numel(subjectNames));
+
+            % criterion 
+            groupB.(targets{iT}).(fields{iF}).sessionCriterion = -0.5*(norminv(hit) + norminv(fa)); 
+            groupB.(targets{iT}).(fields{iF}).subjectCriterion(:,countSubject) = nanmean(-0.5*(norminv(hit(:,i:i+1)) + norminv(fa(:,i:i+1))));
+            groupB.(targets{iT}).(fields{iF}).criterion = nanmean(groupB.(targets{iT}).(fields{iF}).subjectCriterion);
+            groupB.(targets{iT}).(fields{iF}).criterionSte = nanstd(groupB.(targets{iT}).(fields{iF}).subjectCriterion)/sqrt(numel(subjectNames));
             
             if plotAxis 
                 groupB.(targets{iT}).(fields{iF}).subjectAcc0(:,countSubject) = nanmean(groupB.(targets{iT}).(fields{iF}).acc0(:,i:i+1),2);
@@ -150,46 +150,110 @@ for iT = 1:numel(targets)
     end
 end
 
-%% plot dprime 
+%% plot dprime
 figure
+meg_figureStyle
 hold on 
+buffer = 0.1; 
 set(gcf,'Position',[100 100 200 400]) 
 for iT = 1:numel(targets)
     for iF = 1:numel(fields)    
         if strcmp(expt,'TA2') && strcmp(fields{iF},'neutral')
             color = p.cueColors(3,:); % neutral
         elseif iF == iT
-            color = p.cueColors(1,:); % valid
+            color = p.cueColors(7,:); % valid
+            x = iT-buffer; 
         else
-            color = p.cueColors(2,:); % invalid
+            color = p.cueColors(8,:); % invalid
+            x = iT+buffer; 
         end
-        errorbar(iT,groupB.(targets{iT}).(fields{iF}).dPrime,groupB.(targets{iT}).(fields{iF}).dPrimeSte,...
+        errorbar(x,groupB.(targets{iT}).(fields{iF}).dPrime,groupB.(targets{iT}).(fields{iF}).dPrimeSte,...
             'Color',color,...
             'Marker','.','MarkerSize',30,...
-            'LineWidth',2,'CapSize',12); 
+            'LineWidth',2,'CapSize',12);
+    end
+end
+if plotSubjects
+    buffer = 0.4; 
+    grey = [0.7 0.7 0.7]; 
+    for iS = 1:10
+        c1 = plot([1-buffer 1+buffer],[groupB.T1.cueT1.subjectDprime(iS) groupB.T1.cueT2.subjectDprime(iS)],'Color',grey); % T1
+        c2 = plot([2-buffer 2+buffer],[groupB.T2.cueT2.subjectDprime(iS) groupB.T2.cueT1.subjectDprime(iS)],'Color',grey); % T2
+        % Color by uppers/downers 
+        if ITPCsubject(iS)==-1
+            c1.Color = 'k'; 
+            c2.Color = 'k'; 
+        end
     end
 end
 xlim([0 3])
 xticks([1 2])
 xticklabels({'T1' 'T2'})
-ylim([0 2.5])
-ylabel('Sensitivity (d'')') 
+% ylim([0 2.5])
+ylabel('d''')
 if saveFigs
-    saveas(gcf,[expt,'_cue_dprime.svg'])
+    saveas(gcf,[expt,'_cue_dprime.png'])
+end
+
+%% plot criterion
+figure
+meg_figureStyle
+hold on 
+buffer = 0.1; 
+set(gcf,'Position',[100 100 200 400]) 
+for iT = 1:numel(targets)
+    for iF = 1:numel(fields)    
+        if strcmp(expt,'TA2') && strcmp(fields{iF},'neutral')
+            color = p.cueColors(3,:); % neutral
+        elseif iF == iT
+            color = p.cueColors(7,:); % valid
+            x = iT-buffer; 
+        else
+            color = p.cueColors(8,:); % invalid
+            x = iT+buffer; 
+        end
+        errorbar(x,groupB.(targets{iT}).(fields{iF}).criterion,groupB.(targets{iT}).(fields{iF}).criterionSte,...
+            'Color',color,...
+            'Marker','.','MarkerSize',30,...
+            'LineWidth',2,'CapSize',12);
+    end
+end
+if plotSubjects
+    buffer = 0.4;
+    grey = [0.7 0.7 0.7];
+    for iS = 1:10
+        c1 = plot([1-buffer 1+buffer],[groupB.T1.cueT1.subjectCriterion(iS) groupB.T1.cueT2.subjectCriterion(iS)],'Color',grey); % T1
+        c2 = plot([2-buffer 2+buffer],[groupB.T2.cueT2.subjectCriterion(iS) groupB.T1.cueT2.subjectCriterion(iS)],'Color',grey);  % T2
+        % Color by uppers/downers
+        if ITPCsubject(iS)==-1
+            c1.Color = 'k';
+            c2.Color = 'k';
+        end
+    end
+end
+xlim([0 3])
+xticks([1 2])
+xticklabels({'T1' 'T2'})
+% ylim([0 2.5])
+ylabel('Criterion') 
+if saveFigs
+    saveas(gcf,[expt,'_cue_criterion.png'])
 end
 
 %% plot rt
 figure
+meg_figureStyle
 hold on 
+buffer = 0.1; 
 set(gcf,'Position',[100 100 200 400]) 
 for iT = 1:numel(targets)
     for iF = 1:numel(fields)
         if strcmp(expt,'TA2') && strcmp(fields{iF},'neutral')
             color = p.cueColors(3,:); % neutral
         elseif iT == iF 
-            color = p.cueColors(1,:); % valid 
+            color = p.cueColors(7,:); % valid 
         else
-            color = p.cueColors(2,:); % invalid 
+            color = p.cueColors(8,:); % invalid 
         end
         errorbar(iT,nanmean(nanmean(groupB.(targets{iT}).(fields{iF}).subjectRT,1),2),...
             nanstd(nanmean(groupB.(targets{iT}).(fields{iF}).subjectRT,1),[],2)/sqrt(numel(subjectNames)),...
