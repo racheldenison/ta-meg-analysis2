@@ -15,6 +15,7 @@ annotateStats = 1;
 saveFigs = 0;
 showLegend = 1; 
 cueLevel = {'cueT1','cueT2'};
+plotStyle = 'scatter'; % bar 
 
 % Figure directory
 [figDir,dateStr,style,colors,p] = meg_manuscriptParams; 
@@ -37,28 +38,38 @@ for iT = 1:2
         y = peakMean(iC,iT);
         % errorbar(1:2, peakMean(iCue,:), peakDiffSte, '.', 'MarkerSize', 30)
 
-        pBar = bar(x,mean(y,'omitnan'));
-        pBar.BarWidth = 0.34;
-        pBars(iC) = pBar; 
-
-        err = peakDiffSte(iT);
-        er = errorbar(x,y,err,err);
-        er.LineWidth = 2;
-        er.CapSize = 0;
-        er.LineStyle = 'none';
-
         switch cueLevel{iC}
             case 'all'
-                pBar.FaceColor = colors.lightPurple;
-                er.Color = colors.darkPurple;
+                faceColor = colors.lightPurple;
+                erColor = colors.darkPurple;
             case 'cueT1'
-                pBar.FaceColor = p.cueColors(iC,:);
-                er.Color = colors.darkestBlue;
+                faceColor = p.cueColors(iC,:);
+                erColor = colors.darkestBlue;
             case 'cueT2'
-                pBar.FaceColor = p.cueColors(iC,:);
-                er.Color = colors.darkestRed;
+                faceColor = p.cueColors(iC,:);
+                erColor = colors.darkestRed;
         end
-        pBar.EdgeColor = pBar.FaceColor;
+        err = peakDiffSte(iT);
+
+        switch plotStyle
+            case 'scatter'
+                errorbar(x,mean(y,'omitnan'),err,'Marker','.','MarkerSize',style.scatter.MarkerSize,'MarkerFaceColor',faceColor,'MarkerEdgeColor',faceColor,...
+                    'Color',faceColor,'LineWidth',2);
+                ylim([0.05 0.1])
+            case 'bar'
+                pBar = bar(x,mean(y,'omitnan'));
+                pBar.BarWidth = 0.34;
+                pBars(iC) = pBar;
+
+                er = errorbar(x,y,err,err);
+                er.LineWidth = 2;
+                er.CapSize = 0;
+                er.LineStyle = 'none';
+
+                pBar.EdgeColor = faceColor;
+                pBar.FaceColor = faceColor;
+                ylim([-0.02 0.1])
+        end
 
         % Mean annotation
         if annotateMean
@@ -78,18 +89,17 @@ xlabel('Target')
 xticks([1 2])
 xticklabels({'T1','T2'})
 xlim([1-style.xBuffer/1.5 2+style.xBuffer/1.5])
-ylim([-0.02 0.1])
 
 % Stats annotation
 if annotateStats
-    txt = meg_annotateStats(1,max(fh.YLim)*0.9,'***'); % T1 
-    txt = meg_annotateStats(2.03,max(fh.YLim)*0.93,'ns'); % T2
+    txt = meg_annotateStats(1,max(fh.YLim)*0.93,'***'); % T1 
+    txt = meg_annotateStats(2.03,max(fh.YLim)*0.95,'ns'); % T2
 end
 
 % Legend
 if showLegend
-    txt = text(max(fh.XLim)*0.98,max(fh.YLim)*1.14,'Precue T1','HorizontalAlignment','right','Color',p.cueColors(1,:),'FontSize',style.txtSize_Legend); 
-    txt = text(max(fh.XLim)*0.98,max(fh.YLim)*1.06,'Precue T2','HorizontalAlignment','right','Color',p.cueColors(2,:),'FontSize',style.txtSize_Legend); 
+    txt = text(max(fh.XLim)*0.98,max(fh.YLim)*1.045,'Precue T1','HorizontalAlignment','right','Color',p.cueColors(1,:),'FontSize',style.txtSize_Legend); 
+    txt = text(max(fh.XLim)*0.98,max(fh.YLim)*1.01,'Precue T2','HorizontalAlignment','right','Color',p.cueColors(2,:),'FontSize',style.txtSize_Legend); 
 end
 
 if saveFigs

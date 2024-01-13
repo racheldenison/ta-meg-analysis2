@@ -195,11 +195,11 @@ for iF = 1:numel(fitTypes)
                 ySet = max(fh.YLim)+(diff(fh.YLim)*0.01);
                 txt = text(p.eventTimes(i),ySet+yOffset,'Precue T1','EdgeColor','none',...
                     'FontSize',14,'HorizontalAlignment','left','VerticalAlignment','Bottom');
-                txt.Color = colors.mediumBlue;
+                txt.Color = p.cueColors(1,:); % colors.mediumBlue;
                 % Precue T2
                 txt = text(p.eventTimes(i),ySet,'Precue T2','EdgeColor','none',...
                     'FontSize',14,'HorizontalAlignment','left','VerticalAlignment','Bottom');
-                txt.Color = colors.mediumRed;
+                txt.Color = p.cueColors(2,:); % colors.mediumRed;
             elseif i==4 % Response cue
                 text(p.eventTimes(i),ySet,p.eventNamesCap{i},'EdgeColor','none',...
                     'FontSize',14,'HorizontalAlignment','right','VerticalAlignment','Bottom');
@@ -248,3 +248,7 @@ for iF = 1:numel(fitTypes)
         end
     end
 end
+
+
+
+

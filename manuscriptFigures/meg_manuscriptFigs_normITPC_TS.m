@@ -19,20 +19,44 @@ end
 % MEG settings 
 p = meg_params('TANoise_ITPCsession8'); 
 cueLevel = {'cueT1','cueT2'};
-includeIdx = [1,2,3,4,6,7,8,9,10];
+includeIdx = [1,2,3,4,6,7,8,9,10]; % subjects to include 
+expt = 'TANoise'; 
+[sessionNames,subjectNames,ITPCsubject,ITPCsession] = meg_sessions(expt); 
 
 % --- Timing ---
 sampling = 1:10:7001; % softens curves
 foi = 20; % frequency of interest, Hz
 paddingBefore = 80; % ms before T1 
-toi = abs(p.tstart)+p.eventTimes(1):abs(p.tstart)+p.eventTimes(2); % preCue:T1
+toi = abs(p.tstart)+p.eventTimes(1):abs(p.tstart)+p.eventTimes(2); % preCue:T1 for plotting anticipatory bar
 toi = toi(1):toi(end)-paddingBefore;
 tIdx = toi+1; % time index
 t = p.t(tIdx)+1; % trial relative time 
+btoi = 470:970; % baseline normaliation window
+btIdx = (abs(p.tstart)+btoi(1):abs(p.tstart)+btoi(end))+1; % baseline normalization time index 
 
 %% Load data 
 filename = sprintf('/Users/%s/Dropbox/Data/TANoise/MEG/Group/mat/groupA_ITPCspectrogram_byAtt.mat',user); 
 load(filename)
+
+%% Normalize data
+for iC = 1:numel(cueLevel)
+        % --- Save baseline timing info
+        A.(cueLevel{iC}).btoi = btoi;
+        A.(cueLevel{iC}).btIdx = btIdx;
+        % --- Get data during baseline window ---
+        A.(cueLevel{iC}).bvals = squeeze(A.(cueLevel{iC}).session(foi,btIdx,:));
+        % --- Average baseline data across time --- 
+        A.(cueLevel{iC}).bvalsMean = mean(A.(cueLevel{iC}).bvals,1,'omitnan');
+        % --- Subtract mean baseline data from ITPC TS --- 
+        clear val 
+        val = squeeze(A.(cueLevel{iC}).session(foi,:,:)) - A.(cueLevel{iC}).bvalsMean;
+        % --- Flip vals based on session ITPC peak direction --- 
+        A.(cueLevel{iC}).normSession2 = val.*ITPCsession; % 7001 x 20 
+        % --- Average to subjects --- 
+        A.(cueLevel{iC}).normSubject2 = meg_sessions2subjects(A.(cueLevel{iC}).normSession2); 
+        % --- Average to group --- 
+        A.(cueLevel{iC}).normGroup2 = mean(A.(cueLevel{iC}).normSubject2,2,'omitnan'); 
+end
 
 %% Plot normalized ITPC time series with shaded error bars 
 figure;
@@ -56,7 +80,8 @@ meg_sendToBack(xh)
 errorBarType = 'SED';
 for iC = 1:numel(cueLevel)
     % --- Get data ---
-    groupVals = mean(A.(cueLevel{iC}).normSubjectFlipped(20,:,includeIdx),3,'omitnan');
+    groupVals = mean(A.(cueLevel{iC}).normSubject2(:,includeIdx),2,'omitnan');
+    ydiff = A.cueT1.normSubject2(:,includeIdx)-A.cueT2.normSubject2(:,includeIdx);
     % --- Set cue colors ---
     if iC==2
         cLight = 'lightRed';
@@ -69,7 +94,6 @@ for iC = 1:numel(cueLevel)
     if plotErrorBars
         switch errorBarType
             case 'SED' % standard error of the difference
-                ydiff = squeeze(A.cueT1.normSubjectFlipped(20,:,includeIdx))-squeeze(A.cueT2.normSubjectFlipped(20,:,includeIdx));
                 sed = std(ydiff,[],2,'omitnan')./sqrt(numel(includeIdx));
                 % Plot
                 t_plot = p.t(sampling);
@@ -86,15 +110,16 @@ for iC = 1:numel(cueLevel)
 end
 
 for iC = 1:numel(cueLevel)
-    groupVals = mean(A.(cueLevel{iC}).normSubjectFlipped(20,:,includeIdx),3,'omitnan');
+    % --- Get data again --- 
+    groupVals = mean(A.(cueLevel{iC}).normSubject2(:,includeIdx),2,'omitnan');
     % --- Plot data (on top) ---
     plot(p.t(sampling),groupVals(sampling),'LineWidth',2,'Color',p.cueColors(iC,:))
 end
 
-% --- Plot shaded baseline window ---
+% --- Plot shaded baseline normalization window ---
 xl = xlim;
 yl = ylim;
-x = [p.t(tIdx(1)) p.t(tIdx(end)) p.t(tIdx(end)) p.t(tIdx(1))];
+x = [p.t(btIdx(1)) p.t(btIdx(end)) p.t(btIdx(end)) p.t(btIdx(1))];
 yScale = yl(2)-yl(1);
 ySize = (0.02*0.15)*(yScale/0.15);
 y = [yl(1) yl(1) yl(1)+ySize yl(1)+ySize]; % [yl(1) yl(1) yl(2) yl(2)]
@@ -123,11 +148,11 @@ for i = 1:numel(p.eventTimes)
         ySet = max(fh.YLim)+(diff(fh.YLim)*0.01); 
         txt = text(p.eventTimes(i),ySet+yOffset,'Precue T1','EdgeColor','none',...
             'FontSize',14,'HorizontalAlignment','left','VerticalAlignment','Bottom');
-        txt.Color = colors.mediumBlue;
+        txt.Color = p.cueColors(1,:); % colors.mediumBlue;
         % Precue T2
         txt = text(p.eventTimes(i),ySet,'Precue T2','EdgeColor','none',...
             'FontSize',14,'HorizontalAlignment','left','VerticalAlignment','Bottom');
-        txt.Color = colors.mediumRed;
+        txt.Color = p.cueColors(2,:); % colors.mediumRed;
     elseif i==4 % Response cue
         text(p.eventTimes(i),ySet,p.eventNamesCap{i},'EdgeColor','none',...
             'FontSize',14,'HorizontalAlignment','right','VerticalAlignment','Bottom');
