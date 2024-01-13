@@ -10,6 +10,8 @@ style.ebLineWidth = 0.2; % line width of shaded error bar edges
 
 % scatterplots 
 style.xBuffer = 1; 
+style.xBufferSml = 0.2; 
+style.scatter.MarkerSize = 40; 
 
 %% Colors 
 colors.lightgrey = [1 1 1]*0.8; % for patch
@@ -42,6 +44,7 @@ colors.eventLines = [0.5 0.5 0.5];
 
 %% Text size 
 style.txtSize_Annotation = 10; 
+style.txtSize_Legend = 14; 
 
 
 

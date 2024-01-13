@@ -1,10 +1,10 @@
-function [dataKT] = meg_subjectNames_RD2KT(dataRD,subjectIdx)
+function [dataKT] = meg_subjectNames_RD2KT(dataRD)
 % function [dataKT] = subjectNames_RD2KT(dataRD,subjectIdx)
 % Inputs:
 %   - dataRD: data matrix organized in RD subject order 
-%   - subjectIdx: dimension of dataRD that corresponds to subject 
 
 % Rearrange data matrix from RD subject odering to KT subject ordering 
+% dataRD must be 1 x 10? 
 
 % Subject oder RD 
 % 1. R0817
@@ -36,7 +36,7 @@ dimsProd = prod(dims);
 
 % dataRD_1D = reshape(dataRD,[dimsProd 1]); 
 
-dataKT = NaN(size(dataRD)); 
+% dataKT = NaN(size(dataRD)); 
 
 % testing reshaping 
 % dataKT = NaN(dims);
@@ -76,10 +76,11 @@ subjectNamesRD = {'R0817',... 1
     };
 
 %% 
+dataKT = []; 
 for iS = 1:numel(subjectNamesRD)
     [~,Locb] = ismember(subjectNamesRD,subjectNamesKT{iS});
     sIdx = find(Locb); 
-    dataKT(:,:,sIdx) = dataRD(:,:,iS); 
+    dataKT(sIdx) = dataRD(iS); 
 end
 
 
