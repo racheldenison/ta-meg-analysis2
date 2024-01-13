@@ -2,8 +2,6 @@ function meg_manuscriptFigs_bootstrappedFFT
 % function meg_manuscriptFigs_bootstrappedFFT
 % see meg_fftPlayground for full figs
 
-%% Settings
-saveFigs = 0; 
 user = 'kantian'; % kantian (personal), karen (lab)
 
 %% Figure settings 
@@ -11,12 +9,13 @@ titleVis = 0; % if title vis off, then will plot for appropriate manuscript size
 showN = 1; % show n = X annotation 
 figFormat = 'svg'; % svg 
 annotateStats = 1; 
-saveFigs = 1; 
+saveFigs = 0; 
 showLegend = 1; 
 [style, colors] = meg_manuscriptStyle;
+varOI = 'pow'; % amp % plots power or amplitude spectrum 
 
 dateStr = datetime('now','TimeZone','local','Format','yyMMdd');
-figDir = sprintf('/Users/%s/Dropbox/github/ta-meg-analysis2/manuscriptFigures/figs',user); 
+figDir = sprintf('%s/manuscriptFigures/figs',pwd); 
 if ~exist(figDir, 'dir')
     mkdir(figDir)
 end
@@ -73,7 +72,7 @@ dataAll = dataAll(tIdx,:);
 nSessions = size(dataAll,2);
 
 %% FFT on data 
-clear f amp
+clear f amp pow
 for i = 1:nSessions
     [f(i,:),amp(i,:)] = meg_fft(dataAll(:,i));
     % sgtitle(sprintf('FFT %d',i))
@@ -82,17 +81,26 @@ for i = 1:nSessions
     %     saveas(gcf,sprintf('%s/%s.png', figDir, figTitle))
     % end
 end
+pow = amp.^2; 
 
 %% Plot group averaged fft
-meanF = mean(f,1,'omitnan'); 
+meanF = mean(f,1,'omitnan'); % average sessions 
 meanAmp = mean(amp,1,'omitnan'); 
+meanPow = mean(pow,1,'omitnan'); 
 
 %% Bootstrap ITPC FFTs 
-nBoot = 1000; 
+switch varOI 
+    case 'pow'
+        var = pow; 
+    case 'amp'
+        var = amp;
+end
+
+nBoot = 1000;
 for iB = 1:nBoot
     idx = randi(nSessions,[1 nSessions]);
     for iS = 1:nSessions
-        dataBoot(iS,:,iB) = amp(idx(iS),:); % sessions/precue  x freqs x boots 
+        dataBoot(iS,:,iB) = var(idx(iS),:); % sessions/precue  x freqs x boots
     end
 end
 
@@ -124,15 +132,22 @@ for i = 1:numel(fSkip)
 end
 fSkip_idx = fSkip_idx - fStart;
 
+switch varOI 
+    case 'pow'
+        varToFit = meanPow; 
+    case 'amp'
+        varToFit = meanAmp; 
+end
+
 freqToFit = log( meanF(fStart_idx:fEnd_idx   ));
-ampToFit  = log( meanAmp(fStart_idx:fEnd_idx ));
+varToFit  = log( varToFit(fStart_idx:fEnd_idx ));
 
 % Remove line noise and harmonics
 freqToFit(fSkip_idx) = NaN; 
-ampToFit(fSkip_idx) = NaN; 
+varToFit(fSkip_idx) = NaN; 
 
 % Linear fit 
-fitP = polyfit( freqToFit(~isnan(freqToFit)), ampToFit(~isnan(ampToFit)) ,1); % slope, intercept 
+fitP = polyfit( freqToFit(~isnan(freqToFit)), varToFit(~isnan(varToFit)) ,1); % slope, intercept 
 
 %% Plot bootstrapped group FFT 
 figure
@@ -148,8 +163,16 @@ plot(logf,log(mean(dataBootGroup,2,'omitnan')),'LineWidth',0.5,'Color',bootColor
 plot(logf,pLowBootLog,'LineWidth',0.3,'Color',bootColor) % bootstrapped data 5th percentile 
 plot(logf,pHighBootLog,'LineWidth',0.3,'Color',bootColor) % bootstrapped data 95th percentile
 pl(1) = patch([logf(2:end) fliplr(logf(2:end))], [pLowBootLog(2:end) fliplr(pHighBootLog(2:end))],bootColor,'EdgeColor',bootColor,'DisplayName','95% CI bootstrapped FFT'); % shade bootstrapped 5-95th percentile
-pl(2) = plot(log(meanF),log(meanAmp),'LineWidth',1,'Color','k','DisplayName','Data FFT'); % real data
-ylabel('Log (amplitude)')
+switch varOI 
+    case 'pow'
+        pl(2) = plot(log(meanF),log(meanPow),'LineWidth',1,'Color','k','DisplayName','Data FFT'); % real data
+        ylabel('Log (power)')
+        y = [log(meanPow(fStart_idx)) log(meanPow(fEnd_idx))];
+    case 'amp'
+        pl(2) = plot(log(meanF),log(meanAmp),'LineWidth',1,'Color','k','DisplayName','Data FFT'); % real data
+        ylabel('Log (amplitude)')
+        y = [log(meanAmp(fStart_idx)) log(meanAmp(fEnd_idx))];
+end
 xlabel('Frequency (Hz)')
 xlim([0 log(200)])
 xl = xlim;
@@ -171,14 +194,15 @@ xtickangle(0)
 
 % Linear fit to log-log 1/f 
 x = [log(meanF(fStart_idx)) log(meanF(fEnd_idx))];
-y = [log(meanAmp(fStart_idx)) log(meanAmp(fEnd_idx))];
 slope = fitP(1); 
 intercept = fitP(2); 
 x = log(meanF(fStart_idx:fEnd_idx));
 y = fitP(1)*x + fitP(2); 
 rLine = refline(fitP(1),fitP(2));
 rLine.Color = colors.green;
-rLine.LineStyle = '-';
+rLine.LineWidth = 1; 
+rLine.LineStyle = '--';
+rLine.DisplayName = '1/f extrapolation';
 pl(3) = plot(x,y,'Color',colors.green,'LineWidth',1.5,'DisplayName','1/f fit'); 
 
 if showN
@@ -190,7 +214,7 @@ if showN
 end
 
 if showLegend
-    lgd = legend(pl(1:3));
+    lgd = legend([pl(1:3) rLine]);
     lgd.FontSize = 10; 
     lgd.Box = 'off'; 
 end
@@ -207,6 +231,6 @@ for i = 2:size(f,2)
 end
 
 if saveFigs
-    figTitle = sprintf('meg_manuscriptFigs_bootstrappedFFT_%s',dateStr);
+    figTitle = sprintf('meg_manuscriptFigs_bootstrappedFFT_%s_%s',varOI,dateStr);
     saveas(gcf,sprintf('%s/%s.%s', figDir, figTitle, figFormat))
 end
