@@ -20,15 +20,10 @@ plotSubjects = 0;
 saveFigs = 1; 
 annotateMean = 0; 
 annotateStats = 1; 
-[style, colors] = meg_manuscriptStyle;
+plotStyle = 'scatter'; % bar or scatter 
 
-% Figure directory 
-user = 'kantian'; 
-dateStr = datetime('now','TimeZone','local','Format','yyMMdd');
-figDir = sprintf('/Users/%s/Dropbox/github/ta-meg-analysis2/manuscriptFigures/figs',user); 
-if ~exist(figDir, 'dir')
-    mkdir(figDir)
-end
+% Figure directory
+[figDir,dateStr,style,colors,p] = meg_manuscriptParams; 
 
 % Data settings
 cueLevel = {'cueT1','cueT2'}; 
@@ -54,7 +49,8 @@ for iP = 1:3
     fh = subplot(1,1,1);
     hold on
     meg_figureStyle
-    set(gcf,'Position',[100 100 180 style.height])
+    set(gcf,'Position',[100 100 150 style.height])
+    fh.InnerPosition = [0.4140 0.1570 0.4910 0.7680]; 
     for iC = 1:numel(cueLevel)
         clear x y idx paramNames
         paramNames = mdlFit.(fitTypes{iF}).(cueLevel{iC}).(fitLevel).paramNames;
@@ -67,52 +63,39 @@ for iP = 1:3
         y = meg_sessions2subjects(y'); % subjects
         x = iC;
 
-        pBar = bar(x,mean(y,'omitnan'));
-        pBar.BarWidth = 0.85;
-
         % standard error of mean
-        err = std(y)/sqrt(numel(y));
+        % err = std(y)/sqrt(numel(y));
 
-        er = errorbar(x,mean(y,'omitnan'),err,err);
-        er.LineWidth = 2;
-        er.CapSize = 0;
-        er.LineStyle = 'none';
+        % standard error of difference 
+        y1 = mdlFit.(fitTypes{iF}).(cueLevel{1}).(fitLevel).minSolution(:,idx); 
+        y1 = meg_sessions2subjects(y1'); % subjects
+        y2 = mdlFit.(fitTypes{iF}).(cueLevel{2}).(fitLevel).minSolution(:,idx); 
+        y2 = meg_sessions2subjects(y2'); % subjects
+        err = std(y1-y2)/sqrt(numel(y)); 
 
-        darkMode = 1; % light or dark color palette
-        switch cueLevel{iC}
-            case 'all'
-                if darkMode
-                    pBar.FaceColor = colors.darkPurple;
-                    er.Color = colors.lightPurple;
-                    sColor = colors.mediumPurple;
-                else
-                    pBar.FaceColor = colors.lightPurple;
-                    er.Color = colors.darkPurple;
-                end
-            case 'cueT1'
-                if darkMode
-                    pBar.FaceColor = colors.darkBlue;
-                    er.Color = colors.lightBlue;
-                    sColor = colors.precueBlue;
-                else
-                    pBar.FaceColor = colors.lightBlue;
-                    er.Color = colors.darkestBlue;
-                end
-            case 'cueT2'
-                if darkMode
-                    pBar.FaceColor = colors.darkRed;
-                    er.Color = colors.lightRed;
-                    sColor = colors.precueRed;
-                else
-                    pBar.FaceColor = colors.lightRed;
-                    er.Color = colors.darkestRed;
-                end
+        [faceColor,erColor,sColor] = meg_manuscriptStyleCue(cueLevel{iC});
+
+        switch plotStyle
+            case 'bar'
+                pBar = bar(x,mean(y,'omitnan'));
+                pBar.BarWidth = 0.85;
+                er = errorbar(x,mean(y,'omitnan'),err,err);
+                er.LineWidth = 2;
+                er.CapSize = 0;
+                er.LineStyle = 'none';
+                er.Color = erColor;
+                pBar.FaceColor = faceColor;
+                pBar.EdgeColor = pBar.FaceColor;
+            case 'scatter'
+                e = errorbar(x,mean(y,'omitnan'),err,'Marker','.','MarkerSize',style.scatter.MarkerSize,'MarkerFaceColor',faceColor,'MarkerEdgeColor',faceColor,...
+                    'Color',faceColor,'LineWidth',2);
+                e.CapSize = style.scatter.errCapSize; 
         end
-        pBar.EdgeColor = pBar.FaceColor;
 
         % Plot subjects scatter points
         if plotSubjects
-            scatter(x,y,'filled','MarkerFaceColor',sColor)
+            scatter(x,y,style.scatter.MarkerSizeS,'filled','MarkerFaceColor','w')
+            scatter(x,y,style.scatter.MarkerSizeS,'filled','MarkerFaceColor',faceColor,'MarkerEdgeColor','w','MarkerFaceAlpha',0.5)
         end
 
         % Mean annotation
@@ -124,11 +107,43 @@ for iP = 1:3
             txt.FontName = 'Helvetica-Oblique';
         end
     end
-
-    xlabel('Precue') % need to retain sizing?
+    
+    if iP==1
+        xlabel('Precue') % need to retain sizing?
+    else 
+        xlabel('')
+    end
     xticks([1 2])
     xticklabels({'T1','T2'})
     xlim([1-style.xBuffer/1.5 2+style.xBuffer/1.5])
+
+    % y axis styling
+    if plotSubjects
+        switch paramOI
+            case 'amplitude'
+                yticks(0:0.01:0.05)
+                ylim([0 0.05])
+        end
+    else
+        switch paramOI
+            case 'amplitude'
+                yticks(0.0:0.01:0.04)
+                ylim([0.0 0.035])
+            case 'slope'
+                yticks(0:0.02:0.085)
+                ylim([0 0.085])
+            case 'intercept'
+                yticks(0.1:0.02:0.45)
+                ylim([0.26 0.34])
+        end
+    end
+
+    % Subject lines
+    if plotSubjects
+        for i = 1:numel(subjectNames)
+            s = plot([1 2],[y1(i) y2(i)],'Color',colors.lightgrey);
+        end
+    end
 
     % Stats annotation
     if annotateStats
@@ -136,10 +151,59 @@ for iP = 1:3
     end
 
     if saveFigs
-        figTitle = sprintf('meg_manuscriptFigs_TE_byPrecue_mdlFit_2Hz_bar_%s_%s',paramOI,dateStr);
+        if plotSubjects
+            figTitle = sprintf('meg_manuscriptFigs_TE_byPrecue_mdlFit_2Hz_bar_%s_%s_subjects',paramOI,dateStr);
+        else
+            figTitle = sprintf('meg_manuscriptFigs_TE_byPrecue_mdlFit_2Hz_bar_%s_%s',paramOI,dateStr);
+        end
         saveas(gcf,sprintf('%s/%s.%s', figDir, figTitle, figFormat))
     end
 end
+
+%% Export csv long format data for R 
+exportCSV = 1;
+cueLevel = {'cueT1','cueT2'}; 
+clear V
+tableHeaders = {'subject','session','precue',...
+    'intercept','slope','amplitude'};
+varNames = {'intercept','slope','amplitude'}; 
+count = 1;
+for iS = 1:10 % subjects
+    for iSession = 1:2
+        for iC = 1:numel(cueLevel)
+            for iV = 1:numel(varNames)
+                V.subject(count) = iS;
+                V.session(count) = iSession;
+                V.precue(count)  = iC;
+                if iSession==1
+                    idxS = iS*2-1; 
+                elseif iSession==2
+                    idxS = iS*2; 
+                end
+                V.(tableHeaders{iV+3})(count) = mdlFit.linear2Hz.(cueLevel{iC}).session.minSolution(idxS,iV);
+            end
+            count = count+1;
+        end
+    end
+end
+
+% --- Export to csv for R ANOVA ---
+if exportCSV
+    sz = [numel(V.(tableHeaders{1})) numel(tableHeaders)];
+
+    varTypes = repmat("double",[1 numel(tableHeaders)]);
+    T = table('Size',sz,'VariableTypes',varTypes,'VariableNames',tableHeaders);
+
+    for iT = 1:numel(tableHeaders)
+        T.(tableHeaders{iT}) = V.(tableHeaders{iT})';
+    end
+    
+    csvDir = '/Users/kantian/Dropbox/Data/TANoise/TANoise-stats/data'; 
+    csvName = sprintf('TANoise_MdlFit_Linear2Hz');
+    csvPath = sprintf('%s/%s.csv', csvDir, csvName);
+    writetable(T,csvPath)
+end
+
 
 
 
