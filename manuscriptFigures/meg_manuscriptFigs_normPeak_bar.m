@@ -12,10 +12,11 @@ showN = 1; % show n = X annotation
 figFormat = 'svg'; % svg
 annotateMean = 0;
 annotateStats = 1;
-saveFigs = 0;
+saveFigs = 1;
 showLegend = 1; 
 cueLevel = {'cueT1','cueT2'};
-plotStyle = 'scatter'; % bar 
+plotStyle = 'scatter'; % bar
+plotSubjects = 0; 
 
 % Figure directory
 [figDir,dateStr,style,colors,p] = meg_manuscriptParams; 
@@ -26,8 +27,8 @@ fh = subplot(1,1,1);
 hold on
 meg_figureStyle
 set(gcf,'Position',[100 100 300 style.height])
-for iT = 1:2
-    for iC = 1:numel(cueLevel)
+for iT = 1:2 % target 
+    for iC = 1:numel(cueLevel) % precue 
         if iC==1
             x = iT-style.xBufferSml;
         elseif iC==2
@@ -55,7 +56,7 @@ for iT = 1:2
             case 'scatter'
                 errorbar(x,mean(y,'omitnan'),err,'Marker','.','MarkerSize',style.scatter.MarkerSize,'MarkerFaceColor',faceColor,'MarkerEdgeColor',faceColor,...
                     'Color',faceColor,'LineWidth',2);
-                ylim([0.05 0.1])
+                % ylim([0.05 0.1])
             case 'bar'
                 pBar = bar(x,mean(y,'omitnan'));
                 pBar.BarWidth = 0.34;
@@ -71,6 +72,15 @@ for iT = 1:2
                 ylim([-0.02 0.1])
         end
 
+        % Plot subjects
+        if plotSubjects
+            subjectPeak = mean(peakData,4,'omitnan'); 
+            yS = squeeze(subjectPeak(iC,iT,:)); 
+            yS = yS(~isnan(yS));
+            scatter(repmat(x,size(yS)),yS,style.scatter.MarkerSizeS,'filled','MarkerFaceColor','w')
+            scatter(repmat(x,size(yS)),yS,style.scatter.MarkerSizeS,'filled','MarkerFaceColor',faceColor,'MarkerEdgeColor','w','MarkerFaceAlpha',0.5)
+        end
+
         % Mean annotation
         if annotateMean
             lbl = sprintf('%0.2f',mean(y,'omitnan'));
@@ -79,6 +89,7 @@ for iT = 1:2
             txt.FontSize = style.txtSize_Annotation;
             txt.FontName = 'Helvetica-Oblique';
         end
+
     end
 end
 
@@ -98,12 +109,21 @@ end
 
 % Legend
 if showLegend
-    txt = text(max(fh.XLim)*0.98,max(fh.YLim)*1.045,'Precue T1','HorizontalAlignment','right','Color',p.cueColors(1,:),'FontSize',style.txtSize_Legend); 
-    txt = text(max(fh.XLim)*0.98,max(fh.YLim)*1.01,'Precue T2','HorizontalAlignment','right','Color',p.cueColors(2,:),'FontSize',style.txtSize_Legend); 
+    if plotSubjects
+        txt = text(max(fh.XLim)*0.98,max(fh.YLim)*1.1,'Precue T1','HorizontalAlignment','right','Color',p.cueColors(1,:),'FontSize',style.txtSize_Legend);
+        txt = text(max(fh.XLim)*0.98,max(fh.YLim)*1.01,'Precue T2','HorizontalAlignment','right','Color',p.cueColors(2,:),'FontSize',style.txtSize_Legend);
+    else
+        txt = text(max(fh.XLim)*0.98,max(fh.YLim)*1.042,'Precue T1','HorizontalAlignment','right','Color',p.cueColors(1,:),'FontSize',style.txtSize_Legend);
+        txt = text(max(fh.XLim)*0.98,max(fh.YLim)*1.01,'Precue T2','HorizontalAlignment','right','Color',p.cueColors(2,:),'FontSize',style.txtSize_Legend);
+    end
 end
 
 if saveFigs
-    figTitle = sprintf('meg_manuscriptFigs_normPeak_bar_%s',dateStr);
+    if plotSubjects
+        figTitle = sprintf('meg_manuscriptFigs_normPeak_bar_%s_subjects',dateStr);
+    else
+        figTitle = sprintf('meg_manuscriptFigs_normPeak_bar_%s',dateStr);
+    end
     saveas(gcf,sprintf('%s/%s.%s', figDir, figTitle, figFormat))
 end
 
